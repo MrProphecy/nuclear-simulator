@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, Radio, TrendingUp, Award } from 'lucide-react';
+import { AlertTriangle, Radio, Award, BookOpen } from 'lucide-react';
 import { ReactorSimulator } from './utils/ReactorSimulator';
 import { ScoringSystem, DifficultyManager } from './utils/ScoringSystem';
 import { ControlPanel } from './components/ControlPanel';
 import { GaugeCard, ReactorCoreVisualization, AchievementBadge, ScoreBoard } from './components/Gauges';
 import { PowerTemperatureChart, PressureFlowChart, StabilityChart } from './components/Charts';
+import { WelcomeModal } from './components/WelcomeModal';
+import { InstrumentsPanel } from './components/InstrumentsPanel';
+import { TutorialGuide } from './components/TutorialGuide';
+import { Tooltip } from './components/Tooltip';
 
 export default function App() {
   const simulatorRef = useRef(new ReactorSimulator());
@@ -21,6 +25,15 @@ export default function App() {
   const animationRef = useRef(null);
   const lastTimeRef = useRef(Date.now());
   const lastScoringUpdateRef = useRef(0);
+
+  // Tutorial state
+  const [showWelcomeModal, setShowWelcomeModal] = useState(
+    () => !localStorage.getItem('nuclear_sim_visited')
+  );
+  const [tutorialMode, setTutorialMode] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(1);
+  const [completedSteps, setCompletedSteps] = useState([]);
+  const powerInRangeStartRef = useRef(null);
 
   // Loop de simulación
   useEffect(() => {
@@ -78,6 +91,68 @@ export default function App() {
     return () => cancelAnimationFrame(animationRef.current);
   }, [isRunning]);
 
+  // Tutorial step 2 → 3: pump turned on
+  useEffect(() => {
+    if (!tutorialMode || tutorialStep !== 2 || completedSteps.includes(2)) return;
+    if (state.pumpRunning) {
+      simulatorRef.current.logEvent('✓ Bomba de refrigerante en marcha', 'info');
+      setState(simulatorRef.current.getState());
+      setCompletedSteps(prev => [...prev, 2]);
+      setTutorialStep(3);
+    }
+  }, [tutorialMode, tutorialStep, state.pumpRunning, completedSteps]);
+
+  // Tutorial step 3 → 4: simulation started
+  useEffect(() => {
+    if (!tutorialMode || tutorialStep !== 3 || completedSteps.includes(3)) return;
+    if (isRunning) {
+      simulatorRef.current.logEvent('✓ Reacción nuclear iniciada', 'info');
+      setState(simulatorRef.current.getState());
+      setCompletedSteps(prev => [...prev, 3]);
+      setTutorialStep(4);
+    }
+  }, [tutorialMode, tutorialStep, isRunning, completedSteps]);
+
+  // Tutorial step 4 → 5: power stabilized between 500–800 MW for 3 seconds
+  useEffect(() => {
+    if (!tutorialMode || tutorialStep !== 4 || completedSteps.includes(4)) return;
+    if (state.power >= 500 && state.power <= 800) {
+      if (!powerInRangeStartRef.current) {
+        powerInRangeStartRef.current = Date.now();
+      }
+      const elapsed = (Date.now() - powerInRangeStartRef.current) / 1000;
+      if (elapsed >= 3) {
+        simulatorRef.current.logEvent('✓ Potencia estabilizada en rango 500–800 MW', 'info');
+        setState(simulatorRef.current.getState());
+        setCompletedSteps(prev => [...prev, 4]);
+        setTutorialStep(5);
+        powerInRangeStartRef.current = null;
+      }
+    } else {
+      powerInRangeStartRef.current = null;
+    }
+  }, [tutorialMode, tutorialStep, state.power, completedSteps]);
+
+  // Tutorial step 5 → 6: monitoring phase completes after 8 seconds
+  useEffect(() => {
+    if (!tutorialMode || tutorialStep !== 5 || completedSteps.includes(5)) return;
+    const timer = setTimeout(() => {
+      simulatorRef.current.logEvent('✓ Parámetros monitoreados — Reactor operativo', 'info');
+      setState(simulatorRef.current.getState());
+      setCompletedSteps(prev => [...prev, 5]);
+      setTutorialStep(6);
+      const certAchievement = {
+        id: 'certified_operator',
+        name: '🎓 Operador Certificado',
+        desc: 'Completaste el tutorial y encendiste tu primer reactor',
+        points: 1000,
+      };
+      setNewAchievements(prev => [...prev, certAchievement]);
+      setTimeout(() => setNewAchievements(prev => prev.filter(a => a.id !== 'certified_operator')), 6000);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [tutorialMode, tutorialStep, completedSteps]);
+
   const toggleSimulation = () => {
     lastTimeRef.current = Date.now();
     lastScoringUpdateRef.current = 0;
@@ -96,6 +171,51 @@ export default function App() {
     setNewAchievements([]);
     lastTimeRef.current = Date.now();
     lastScoringUpdateRef.current = 0;
+  };
+
+  // Tutorial handlers
+  const handleStartTutorial = () => {
+    localStorage.setItem('nuclear_sim_visited', 'true');
+    setShowWelcomeModal(false);
+    setTutorialMode(true);
+    setTutorialStep(1);
+    setCompletedSteps([]);
+    powerInRangeStartRef.current = null;
+    // Reset simulator to clean state for tutorial
+    simulatorRef.current = new ReactorSimulator();
+    scoringRef.current = new ScoringSystem();
+    difficultyRef.current = new DifficultyManager(1);
+    setState(simulatorRef.current.getState());
+    setScoring(scoringRef.current.getState());
+    setHistory([]);
+    setScenario('normal');
+    setNewAchievements([]);
+    setIsRunning(false);
+    lastTimeRef.current = Date.now();
+    lastScoringUpdateRef.current = 0;
+  };
+
+  const handleSkipTutorial = () => {
+    localStorage.setItem('nuclear_sim_visited', 'true');
+    setShowWelcomeModal(false);
+  };
+
+  const handleToggleTutorial = () => {
+    if (!tutorialMode) {
+      setTutorialMode(true);
+      setTutorialStep(1);
+      setCompletedSteps([]);
+      powerInRangeStartRef.current = null;
+    } else {
+      setTutorialMode(false);
+    }
+  };
+
+  const handleVerifySystems = () => {
+    simulatorRef.current.logEvent('✓ Verificación de sistemas completada — Reactor en standby', 'info');
+    setState(simulatorRef.current.getState());
+    setCompletedSteps(prev => [...prev, 1]);
+    setTutorialStep(2);
   };
 
   const loadScenario = (scenarioName) => {
@@ -148,6 +268,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-6">
+      {/* WELCOME MODAL */}
+      {showWelcomeModal && (
+        <WelcomeModal onStartTutorial={handleStartTutorial} onSkip={handleSkipTutorial} />
+      )}
+
       <div className="max-w-7xl mx-auto">
         {/* HEADER */}
         <div className="mb-6">
@@ -159,12 +284,25 @@ export default function App() {
               </h1>
               <p className="text-slate-400 text-sm">Educativo — Física realista de punto cinético</p>
             </div>
-            <div className={`p-4 rounded-lg border-2 ${alertColors[alertLevel]}`}>
-              <p className="text-sm font-bold">
-                {alertLevel === 'critical' && '🔴 CRÍTICO'}
-                {alertLevel === 'warning' && '🟡 ALERTA'}
-                {alertLevel === 'safe' && '🟢 SEGURO'}
-              </p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={handleToggleTutorial}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition ${
+                  tutorialMode
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                }`}
+              >
+                <BookOpen className="w-4 h-4" />
+                Modo Tutorial: {tutorialMode ? 'ON' : 'OFF'}
+              </button>
+              <div className={`p-4 rounded-lg border-2 ${alertColors[alertLevel]}`}>
+                <p className="text-sm font-bold">
+                  {alertLevel === 'critical' && '🔴 CRÍTICO'}
+                  {alertLevel === 'warning' && '🟡 ALERTA'}
+                  {alertLevel === 'safe' && '🟢 SEGURO'}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -186,6 +324,16 @@ export default function App() {
           </div>
         )}
 
+        {/* TUTORIAL GUIDE */}
+        {tutorialMode && (
+          <TutorialGuide
+            currentStep={tutorialStep}
+            completedSteps={completedSteps}
+            onClose={handleToggleTutorial}
+            onVerifySystems={handleVerifySystems}
+          />
+        )}
+
         {/* PANEL DE CONTROL */}
         <ControlPanel
           sim={sim}
@@ -194,38 +342,51 @@ export default function App() {
           onReset={reset}
           onLoadScenario={loadScenario}
           scenario={scenario}
+          tutorialMode={tutorialMode}
+          tutorialStep={tutorialStep}
         />
+
+        {/* INSTRUMENTOS DEL REACTOR */}
+        <InstrumentsPanel />
 
         {/* MEDIDORES PRINCIPALES */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
-          <GaugeCard
-            label="POTENCIA"
-            value={state.power}
-            unit="MW"
-            max={2000}
-            color="bg-red-500"
-          />
-          <GaugeCard
-            label="TEMPERATURA"
-            value={state.temperature}
-            unit="K"
-            max={700}
-            color="bg-blue-500"
-          />
-          <GaugeCard
-            label="PRESIÓN"
-            value={state.pressure}
-            unit="bar"
-            max={170}
-            color="bg-cyan-500"
-          />
-          <GaugeCard
-            label="FLUJO REFRIGERANTE"
-            value={state.coolantFlow}
-            unit="%"
-            max={100}
-            color="bg-purple-500"
-          />
+          <Tooltip text="Energía producida por el reactor. Rango seguro: 500–1000 MW" position="bottom">
+            <GaugeCard
+              label="POTENCIA"
+              value={state.power}
+              unit="MW"
+              max={2000}
+              color="bg-red-500"
+            />
+          </Tooltip>
+          <Tooltip text="Temperatura del núcleo. Debe mantenerse bajo 550 K para evitar fusión" position="bottom">
+            <GaugeCard
+              label="TEMPERATURA"
+              value={state.temperature}
+              unit="K"
+              max={700}
+              color="bg-blue-500"
+            />
+          </Tooltip>
+          <Tooltip text="Presión del circuito primario. Máximo seguro: 155 bar. SCRAM automático a 160 bar" position="bottom">
+            <GaugeCard
+              label="PRESIÓN"
+              value={state.pressure}
+              unit="bar"
+              max={170}
+              color="bg-cyan-500"
+            />
+          </Tooltip>
+          <Tooltip text="Circulación de agua refrigerante. Mínimo seguro: 80%. Por debajo de 30% es emergencia" position="bottom">
+            <GaugeCard
+              label="FLUJO REFRIGERANTE"
+              value={state.coolantFlow}
+              unit="%"
+              max={100}
+              color="bg-purple-500"
+            />
+          </Tooltip>
         </div>
 
         {/* VISUALIZACIÓN DEL REACTOR */}
