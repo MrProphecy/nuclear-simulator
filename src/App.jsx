@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, Radio, Award, BookOpen } from 'lucide-react';
+import { AlertTriangle, Radio, Award, BookOpen, GraduationCap } from 'lucide-react';
 import { ReactorSimulator } from './utils/ReactorSimulator';
 import { ScoringSystem, DifficultyManager } from './utils/ScoringSystem';
 import { ControlPanel } from './components/ControlPanel';
@@ -9,6 +9,7 @@ import { WelcomeModal } from './components/WelcomeModal';
 import { ScramModal } from './components/ScramModal';
 import { InstrumentsPanel } from './components/InstrumentsPanel';
 import { TutorialGuide } from './components/TutorialGuide';
+import { EducationPanel } from './components/EducationPanel';
 import { Tooltip } from './components/Tooltip';
 
 export default function App() {
@@ -42,6 +43,9 @@ export default function App() {
   const [showScramModal, setShowScramModal] = useState(false);
   const [scramReason, setScramReason] = useState('');
   const scramModalShownRef = useRef(false);
+
+  // Education panel
+  const [showEducation, setShowEducation] = useState(false);
 
   // Loop de simulación
   useEffect(() => {
@@ -360,6 +364,7 @@ export default function App() {
           scramReason={scramReason}
           temperature={state.temperature}
           pressure={state.pressure}
+          coolantFlow={state.coolantFlow}
           onClose={handleScramClose}
           onRetry={handleScramRetry}
           onTutorial={handleScramTutorial}
@@ -378,7 +383,7 @@ export default function App() {
       <div className="max-w-7xl mx-auto">
         {/* HEADER */}
         <div className="mb-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="text-4xl font-bold text-white flex items-center gap-3 mb-2">
                 <Radio className="w-10 h-10 text-yellow-500 reactor-core" />
@@ -398,6 +403,17 @@ export default function App() {
                 <BookOpen className="w-4 h-4" />
                 Modo Tutorial: {tutorialMode ? 'ON' : 'OFF'}
               </button>
+              <button
+                onClick={() => setShowEducation(e => !e)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition ${
+                  showEducation
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                }`}
+              >
+                <GraduationCap className="w-4 h-4" />
+                ? Aprende más
+              </button>
               <div className={`p-4 rounded-lg border-2 ${alertColors[alertLevel]}`}>
                 <p className="text-sm font-bold">
                   {alertLevel === 'critical' && '🔴 CRÍTICO'}
@@ -407,6 +423,68 @@ export default function App() {
               </div>
             </div>
           </div>
+
+          {/* SAFETY INDICATORS BAR */}
+          {(() => {
+            const getTempStatus = (t) => t > 550 ? 'critical' : t > 500 ? 'warning' : 'ok';
+            const getPressStatus = (p) => p > 155 ? 'critical' : p > 150 ? 'warning' : 'ok';
+            const getFlowStatus = (f) => f < 30 ? 'critical' : f < 50 ? 'warning' : 'ok';
+
+            const indicators = [
+              {
+                label: 'Temperatura',
+                status: getTempStatus(state.temperature),
+                value: state.temperature.toFixed(0),
+                unit: 'K',
+                warnMsg: `ADVERTENCIA: ${state.temperature.toFixed(0)}K`,
+                critMsg: `CRÍTICO: ${state.temperature.toFixed(0)}K`,
+              },
+              {
+                label: 'Presión',
+                status: getPressStatus(state.pressure),
+                value: state.pressure.toFixed(1),
+                unit: 'bar',
+                warnMsg: `ADVERTENCIA: ${state.pressure.toFixed(1)} bar`,
+                critMsg: `CRÍTICO: ${state.pressure.toFixed(1)} bar`,
+              },
+              {
+                label: 'Flujo',
+                status: getFlowStatus(state.coolantFlow),
+                value: state.coolantFlow.toFixed(0),
+                unit: '%',
+                warnMsg: `BAJO: ${state.coolantFlow.toFixed(0)}%`,
+                critMsg: `CRÍTICO: ${state.coolantFlow.toFixed(0)}%`,
+              },
+            ];
+
+            const styleMap = {
+              ok:       'bg-green-900/40 border-green-600/50 text-green-300',
+              warning:  'bg-yellow-900/50 border-yellow-500/60 text-yellow-200',
+              critical: 'bg-red-900/60 border-red-500/70 text-red-200 animate-pulse',
+            };
+            const emojiMap = { ok: '✅', warning: '⚠️', critical: '🔴' };
+
+            return (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {indicators.map(({ label, status, value, unit, warnMsg, critMsg }) => (
+                  <div
+                    key={label}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border ${styleMap[status]}`}
+                  >
+                    <span>{emojiMap[status]}</span>
+                    <span>
+                      {label}:{' '}
+                      {status === 'ok'
+                        ? 'OK'
+                        : status === 'warning'
+                        ? warnMsg
+                        : critMsg}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           {/* SCOREBOARD */}
           <ScoreBoard
@@ -438,6 +516,11 @@ export default function App() {
           />
         )}
 
+        {/* EDUCATION PANEL */}
+        {showEducation && (
+          <EducationPanel onClose={() => setShowEducation(false)} />
+        )}
+
         {/* PANEL DE CONTROL */}
         <ControlPanel
           sim={sim}
@@ -457,7 +540,7 @@ export default function App() {
 
         {/* MEDIDORES PRINCIPALES */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
-          <Tooltip text="Energía producida por el reactor. Rango seguro: 500–1000 MW" position="bottom">
+          <Tooltip text="Potencia: Energía generada en Megavatios. Normal: 500–800 MW" position="bottom">
             <GaugeCard
               label="POTENCIA"
               value={state.power}
@@ -466,7 +549,7 @@ export default function App() {
               color="bg-red-500"
             />
           </Tooltip>
-          <Tooltip text="Temperatura del núcleo. Debe mantenerse bajo 550 K para evitar fusión" position="bottom">
+          <Tooltip text="Temperatura: Calor del núcleo en Kelvin. Máximo seguro: 550K" position="bottom">
             <GaugeCard
               label="TEMPERATURA"
               value={state.temperature}
@@ -475,7 +558,7 @@ export default function App() {
               color="bg-blue-500"
             />
           </Tooltip>
-          <Tooltip text="Presión del circuito primario. Máximo seguro: 155 bar. SCRAM automático a 160 bar" position="bottom">
+          <Tooltip text="Presión: Estrés del circuito primario. Máximo: 160 bar" position="bottom">
             <GaugeCard
               label="PRESIÓN"
               value={state.pressure}
@@ -484,7 +567,7 @@ export default function App() {
               color="bg-cyan-500"
             />
           </Tooltip>
-          <Tooltip text="Circulación de agua refrigerante. Mínimo seguro: 80%. Por debajo de 30% es emergencia" position="bottom">
+          <Tooltip text="Flujo Refrigerante: Circulación de agua. Mínimo: 30%" position="bottom">
             <GaugeCard
               label="FLUJO REFRIGERANTE"
               value={state.coolantFlow}
@@ -642,7 +725,7 @@ export default function App() {
 
         {/* FOOTER */}
         <div className="text-center text-slate-500 text-xs border-t border-slate-700 pt-4">
-          <p>⚛️ Nuclear Reactor Simulator v2.0 | Educativo</p>
+          <p>⚛️ Nuclear Reactor Simulator v2.1 | Educativo</p>
           <p className="mt-2">Física realista • Parámetros ficticios • Para aprendizaje en ingeniería nuclear</p>
           <p className="mt-1">GitHub: MrProphecy | Deployed on Vercel</p>
         </div>

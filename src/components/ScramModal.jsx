@@ -1,8 +1,34 @@
 import React from 'react';
-import { AlertTriangle, CheckCircle, XCircle, BookOpen, RotateCcw } from 'lucide-react';
+import { AlertTriangle, CheckCircle, BookOpen, RotateCcw } from 'lucide-react';
 
-export function ScramModal({ scramReason, temperature, pressure, onClose, onRetry, onTutorial, onRecover }) {
-  const canRecover = temperature < 400 && pressure < 100;
+export function ScramModal({ scramReason, temperature, pressure, coolantFlow = 100, onClose, onRetry, onTutorial, onRecover }) {
+  const tempOk = temperature < 400;
+  const pressureOk = pressure < 100;
+  const flowOk = coolantFlow >= 80;
+  const canRecover = tempOk && pressureOk;
+
+  const checkItems = [
+    {
+      label: 'Espera a que Temperatura < 400K',
+      checked: tempOk,
+      current: `${temperature.toFixed(0)} K`,
+      note: null,
+    },
+    {
+      label: 'Espera a que Presión < 100 bar',
+      checked: pressureOk,
+      current: `${pressure.toFixed(1)} bar`,
+      note: null,
+    },
+    {
+      label: 'Verifica Flujo Refrigerante = 100%',
+      checked: flowOk,
+      current: `${coolantFlow.toFixed(0)} %`,
+      note: !flowOk && coolantFlow < 30
+        ? 'Enciende la bomba antes de recuperar'
+        : !flowOk ? 'Flujo por debajo del mínimo' : null,
+    },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -17,206 +43,195 @@ export function ScramModal({ scramReason, temperature, pressure, onClose, onRetr
 
         <div className="p-5 space-y-4">
 
-          {/* Sección 1: Por qué pasó */}
+          {/* Sección 1: ¿Por qué se activó? */}
           <div className="bg-red-900/20 border border-red-600/40 rounded-xl p-4">
             <h2 className="text-red-300 font-bold text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
-              ¿Por qué pasó?
+              Sección 1 — ¿Por qué se activó?
             </h2>
-            <div className="bg-red-950/60 rounded-lg p-3 mb-3 border border-red-500/30">
-              <p className="text-slate-300 text-xs mb-1">El SCRAM se activó porque:</p>
+            <div className="bg-red-950/60 rounded-lg p-3 border border-red-500/30">
+              <p className="text-slate-400 text-xs mb-1">Causa específica del SCRAM:</p>
               <p className="text-red-100 font-bold text-base">
                 {scramReason || 'Sistema de seguridad detectó condición anormal'}
               </p>
             </div>
-            <p className="text-slate-300 text-xs leading-relaxed">
-              Esta es una <strong className="text-white">medida de seguridad automática</strong> que detiene
-              INMEDIATAMENTE la reacción nuclear cuando detecta una condición peligrosa.
-            </p>
           </div>
 
-          {/* Sección 2: Consecuencias */}
+          {/* Sección 2: ¿Qué significa? */}
           <div className="bg-slate-800/60 border border-slate-600/40 rounded-xl p-4">
-            <h2 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Consecuencias</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-green-300 text-xs font-semibold mb-2">¿Qué pasó?</p>
-                <div className="space-y-1.5">
-                  {[
-                    'Barras de control insertadas al 100%',
-                    'Reacción nuclear detenida',
-                    'Potencia cae a cero',
-                    'Temperatura y presión bajan lentamente',
-                    'Sistema de refrigeración de emergencia activado',
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-slate-300 text-xs">
-                      <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 text-green-400" />
-                      {item}
-                    </div>
-                  ))}
+            <h2 className="text-white font-bold text-xs uppercase tracking-wider mb-3">
+              Sección 2 — ¿Qué significa el SCRAM?
+            </h2>
+            <div className="space-y-2 mb-3">
+              {[
+                'El SCRAM es un sistema de SEGURIDAD automático',
+                'Barras de control se insertaron al 100%',
+                'Reacción nuclear detenida INMEDIATAMENTE',
+                'Potencia cae a cero en segundos',
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2 text-slate-300 text-xs">
+                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 text-green-400" />
+                  {item}
                 </div>
-              </div>
-              <div className="bg-blue-950/40 border border-blue-600/30 rounded-lg p-3">
-                <p className="text-blue-300 font-bold text-xs mb-2">¿Es peligroso?</p>
-                <p className="text-slate-300 text-xs leading-relaxed">
-                  Paradójicamente <strong className="text-green-400">NO</strong>. El SCRAM es una
-                  <strong className="text-white"> CARACTERÍSTICA DE SEGURIDAD</strong>.
-                  Es como los airbags: se disparan para <strong className="text-green-300">EVITAR un accidente peor</strong>.
-                </p>
-                <p className="text-slate-500 text-xs mt-2 italic leading-relaxed">
-                  "En Chernobyl, el SCRAM falló. En Fukushima, el SCRAM funcionó perfectamente y evitó una catástrofe mayor."
-                </p>
-              </div>
+              ))}
+            </div>
+            <div className="bg-blue-950/40 border border-blue-600/30 rounded-lg p-3">
+              <p className="text-green-300 font-bold text-xs mb-1">¿Es un accidente? NO — es la solución.</p>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                El SCRAM es como los airbags de un coche: se activa para{' '}
+                <strong className="text-green-300">EVITAR un accidente peor</strong>.
+                Esto es <strong className="text-white">BUENO, no un problema</strong>.
+              </p>
             </div>
           </div>
 
-          {/* Sección 3: Cómo solucionarlo + estado en tiempo real */}
-          <div className="bg-slate-800/60 border border-slate-600/40 rounded-xl p-4">
-            <h2 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Estado actual del sistema</h2>
-
-            {/* Valores en tiempo real */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className={`rounded-lg p-3 border text-center ${temperature < 400 ? 'bg-green-950/40 border-green-600/50' : 'bg-slate-900/60 border-slate-600/40'}`}>
-                <p className="text-slate-400 text-xs mb-1">Temperatura</p>
-                <p className={`text-xl font-bold tabular-nums ${temperature < 400 ? 'text-green-400' : 'text-orange-300'}`}>
-                  {temperature.toFixed(0)} K
-                </p>
-                <p className="text-slate-500 text-xs mt-1">
-                  {temperature < 400 ? '✓ Seguro' : 'Objetivo <400K'}
-                </p>
-                <div className="w-full bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div
-                    className={`h-1.5 rounded-full transition-all duration-500 ${temperature < 400 ? 'bg-green-500' : 'bg-orange-500'}`}
-                    style={{ width: `${Math.min(100, (temperature / 600) * 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className={`rounded-lg p-3 border text-center ${pressure < 100 ? 'bg-green-950/40 border-green-600/50' : 'bg-slate-900/60 border-slate-600/40'}`}>
-                <p className="text-slate-400 text-xs mb-1">Presión</p>
-                <p className={`text-xl font-bold tabular-nums ${pressure < 100 ? 'text-green-400' : 'text-cyan-300'}`}>
-                  {pressure.toFixed(1)} bar
-                </p>
-                <p className="text-slate-500 text-xs mt-1">
-                  {pressure < 100 ? '✓ Seguro' : 'Objetivo <100 bar'}
-                </p>
-                <div className="w-full bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div
-                    className={`h-1.5 rounded-full transition-all duration-500 ${pressure < 100 ? 'bg-green-500' : 'bg-cyan-500'}`}
-                    style={{ width: `${Math.min(100, (pressure / 160) * 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-lg p-3 border bg-slate-900/60 border-slate-600/40 text-center">
-                <p className="text-slate-400 text-xs mb-1">Barras</p>
-                <p className="text-xl font-bold text-green-400">100%</p>
-                <p className="text-slate-500 text-xs mt-1">Totalmente insertadas</p>
-                <div className="w-full bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div className="h-1.5 rounded-full bg-green-500 w-full" />
-                </div>
-              </div>
-            </div>
-
-            {/* Qué hacer / qué no hacer */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <div>
-                <p className="text-green-300 text-xs font-bold mb-2">Qué hacer ahora:</p>
-                <ol className="space-y-1">
-                  {[
-                    'Espera que temperatura baje a <400K',
-                    'Espera que presión baje a <100 bar',
-                    'Verifica flujo de refrigerante al 100%',
-                    "Click en 'RECUPERAR' para reiniciar",
-                    'Comienza lentamente desde cero',
-                  ].map((item, i) => (
-                    <li key={i} className="text-slate-300 text-xs flex items-start gap-1.5">
-                      <span className="text-blue-400 font-bold flex-shrink-0 w-3">{i + 1}.</span>
-                      {item}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <div>
-                <p className="text-red-300 text-xs font-bold mb-2">Qué NO hacer:</p>
-                <ul className="space-y-1">
-                  {[
-                    'No ignores las advertencias previas',
-                    'No hagas cambios bruscos de parámetros',
-                    'No intentes reiniciar antes de estabilizar',
-                  ].map((item, i) => (
-                    <li key={i} className="text-slate-300 text-xs flex items-start gap-1.5">
-                      <XCircle className="w-3 h-3 text-red-400 flex-shrink-0 mt-0.5" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Estado de recuperación */}
-            {canRecover ? (
-              <div className="bg-green-900/40 border border-green-500/50 rounded-lg p-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <div>
-                    <p className="text-green-300 font-bold text-sm">Sistema estabilizado</p>
-                    <p className="text-green-400/70 text-xs">Temperatura y presión en rango seguro</p>
-                  </div>
-                </div>
-                <button
-                  onClick={onRecover}
-                  className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm transition flex-shrink-0"
-                >
-                  RECUPERAR
-                </button>
-              </div>
-            ) : (
-              <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-3 flex items-center gap-3">
-                <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                <div>
-                  <p className="text-orange-300 text-sm font-semibold">Esperando estabilización...</p>
-                  <p className="text-slate-400 text-xs">
-                    Temp: {temperature.toFixed(0)}K → 400K &nbsp;|&nbsp; Presión: {pressure.toFixed(1)} bar → 100 bar
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Sección 4: Lecciones históricas */}
+          {/* Sección 3: Casos históricos */}
           <div className="bg-slate-800/40 border border-slate-600/30 rounded-xl p-4">
-            <h2 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Esto pasó en la vida real</h2>
+            <h2 className="text-white font-bold text-xs uppercase tracking-wider mb-3">
+              Sección 3 — Casos Históricos
+            </h2>
             <div className="space-y-3">
               {[
                 {
                   emoji: '💣',
                   label: 'Chernobyl 1986',
-                  color: 'text-red-300',
-                  text: 'Los operadores ignoraron advertencias y desactivaron los sistemas de seguridad. El SCRAM llegó tarde. Resultado: explosión y fusión del núcleo.',
+                  badge: 'SCRAM falló → Explosión',
+                  badgeColor: 'bg-red-900/60 text-red-300',
+                  text: 'Los operadores desactivaron los sistemas de seguridad para un experimento. El SCRAM llegó tarde. Resultado: explosión de vapor y fusión del núcleo.',
                 },
                 {
                   emoji: '⚛️',
                   label: 'Three Mile Island 1979',
-                  color: 'text-yellow-300',
-                  text: 'El SCRAM funcionó correctamente y detuvo la reacción. La crisis fue por mal manejo posterior del refrigerante. El reactor quedó contenido.',
+                  badge: 'SCRAM funcionó → Contenido',
+                  badgeColor: 'bg-yellow-900/60 text-yellow-300',
+                  text: 'El SCRAM detuvo la reacción correctamente. La crisis fue por mal manejo posterior del refrigerante, pero el reactor quedó contenido.',
                 },
                 {
                   emoji: '🌊',
                   label: 'Fukushima 2011',
-                  color: 'text-blue-300',
-                  text: 'El tsunami activó el SCRAM automático (funcionó perfectamente). El problema fue que el tsunami también destruyó los generadores de la bomba de refrigeración de emergencia.',
+                  badge: 'SCRAM funcionó → Tsunami cortó todo',
+                  badgeColor: 'bg-blue-900/60 text-blue-300',
+                  text: 'El tsunami activó el SCRAM automático (funcionó perfectamente). El problema fue que destruyó los generadores de la bomba de refrigeración de emergencia.',
                 },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-3">
-                  <span className="text-xl flex-shrink-0">{item.emoji}</span>
+                  <span className="text-2xl flex-shrink-0 leading-none mt-0.5">{item.emoji}</span>
                   <div>
-                    <p className={`${item.color} font-bold text-xs`}>{item.label}:</p>
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <p className="text-white font-bold text-xs">{item.label}</p>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded ${item.badgeColor}`}>
+                        {item.badge}
+                      </span>
+                    </div>
                     <p className="text-slate-400 text-xs leading-relaxed">{item.text}</p>
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Sección 4: Checklist de recuperación */}
+          <div className="bg-slate-800/60 border border-slate-600/40 rounded-xl p-4">
+            <h2 className="text-white font-bold text-xs uppercase tracking-wider mb-4">
+              Sección 4 — ¿Cómo recuperarse?
+            </h2>
+
+            <div className="space-y-2">
+              {/* Checklist items 1-3 */}
+              {checkItems.map(({ label, checked, current, note }, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all duration-500 ${
+                    checked
+                      ? 'bg-green-950/40 border-green-600/50'
+                      : 'bg-slate-900/60 border-slate-600/40'
+                  }`}
+                >
+                  {/* Checkbox */}
+                  <div
+                    className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all duration-300 ${
+                      checked ? 'bg-green-500 border-green-500' : 'border-slate-500 bg-slate-800'
+                    }`}
+                  >
+                    {checked && (
+                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-medium ${checked ? 'text-green-300 line-through decoration-green-600' : 'text-slate-300'}`}>
+                      {label}
+                    </span>
+                    {note && (
+                      <p className="text-yellow-400 text-xs mt-0.5 font-semibold">{note}</p>
+                    )}
+                  </div>
+
+                  <span className={`text-xs tabular-nums font-mono flex-shrink-0 ${checked ? 'text-green-400' : 'text-orange-300'}`}>
+                    {current}
+                  </span>
+                </div>
+              ))}
+
+              {/* Item 4: RECUPERAR */}
+              <div
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all duration-500 ${
+                  canRecover
+                    ? 'bg-green-900/40 border-green-500/60'
+                    : 'bg-slate-900/30 border-slate-700/40 opacity-60'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all duration-300 ${
+                    canRecover ? 'bg-green-500 border-green-500' : 'border-slate-600 bg-slate-800'
+                  }`}
+                >
+                  {canRecover && (
+                    <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <span className={`text-sm font-medium ${canRecover ? 'text-green-300' : 'text-slate-500'}`}>
+                    Click en RECUPERAR
+                  </span>
+                  {!canRecover && (
+                    <p className="text-slate-600 text-xs">aparece cuando todo esté OK</p>
+                  )}
+                </div>
+
+                {canRecover ? (
+                  <button
+                    onClick={onRecover}
+                    className="bg-green-600 hover:bg-green-500 text-white font-bold py-1.5 px-5 rounded-lg text-sm transition flex-shrink-0 shadow-lg shadow-green-900/40"
+                  >
+                    RECUPERAR
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-slate-600 text-xs flex-shrink-0">
+                    <div className="w-3 h-3 border border-slate-600 border-t-transparent rounded-full animate-spin" />
+                    esperando...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Waiting status */}
+            {!canRecover && (
+              <div className="mt-3 flex items-center gap-3 p-3 bg-orange-900/20 border border-orange-600/30 rounded-lg">
+                <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                <div>
+                  <p className="text-orange-300 text-sm font-semibold">Esperando estabilización...</p>
+                  <p className="text-slate-400 text-xs">
+                    T: {temperature.toFixed(0)}K → &lt;400K &nbsp;|&nbsp; P: {pressure.toFixed(1)} bar → &lt;100 bar
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -161,7 +161,7 @@ export function ControlPanel({
             maxDisplay={1000}
             param="power"
             decimals={0}
-            tooltip="Potencia: Energía producida. Se mide en Megavatios (MW). Verde < 400 MW · Amarillo 400–600 MW · Rojo > 600 MW"
+            tooltip="Potencia: Energía generada en Megavatios. Normal: 500–800 MW. Rojo > 600 MW"
           />
           <ParamBar
             label="Temperatura"
@@ -170,7 +170,7 @@ export function ControlPanel({
             maxDisplay={700}
             param="temperature"
             decimals={0}
-            tooltip="Temperatura: Calor del núcleo. Verde < 500 K · Amarillo 500–550 K · Rojo > 550 K (peligro de fusión del núcleo)"
+            tooltip="Temperatura: Calor del núcleo en Kelvin. Máximo seguro: 550K. Si supera 600K → SCRAM automático"
           />
           <ParamBar
             label="Presión"
@@ -179,12 +179,12 @@ export function ControlPanel({
             maxDisplay={170}
             param="pressure"
             decimals={1}
-            tooltip="Presión: Estrés del circuito primario. Verde < 150 bar · Amarillo 150–155 bar · Rojo > 155 bar. SCRAM automático a 160 bar"
+            tooltip="Presión: Estrés del circuito primario. Máximo: 160 bar. SCRAM automático al exceder ese límite"
           />
 
           {/* Coolant flow — custom because threshold is inverted */}
           <Tooltip
-            text="Flujo Refrigerante: Circulación del agua de enfriamiento. Verde ≥ 30% (seguro) · Rojo < 30% (emergencia LOCA)"
+            text="Flujo Refrigerante: Circulación de agua. Mínimo: 30%. Por debajo → SCRAM automático"
             position="bottom"
           >
             <div
@@ -211,7 +211,7 @@ export function ControlPanel({
 
           {/* Pump status */}
           <Tooltip
-            text="Estado Bomba: La bomba de refrigeración debe estar siempre ON durante operación. Sin bomba el reactor sobrecalienta en segundos"
+            text="Estado Bomba: Circula agua para enfriar. ON=esencial durante operación. Sin bomba el núcleo sobrecalienta en segundos"
             position="bottom"
           >
             <div
@@ -238,7 +238,7 @@ export function ControlPanel({
 
           {/* Control rods % */}
           <Tooltip
-            text="Barras de Control: Varillas de boro que absorben neutrones. Más % = menos reacción = menos potencia"
+            text="Barras de Control: Varillas de boro. 0%=máx reacción, 100%=mín reacción"
             position="bottom"
           >
             <div className="rounded-lg px-3 py-2.5 border bg-cyan-950/30 border-cyan-700/40 cursor-help">
