@@ -81,7 +81,7 @@ export function ControlPanel({
       ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-slate-800'
       : '';
 
-  const isStep4 = tutorialMode && tutorialStep === 4;
+  const isStepPower = tutorialMode && tutorialStep === 5;
 
   const alerts = [];
   if (isRunning) {
@@ -262,12 +262,12 @@ export function ControlPanel({
         <div
           id="control-rods-slider"
           className={`rounded-xl p-4 border transition-all duration-300 ${
-            isStep4
+            isStepPower
               ? 'border-red-500 bg-red-950/20 ring-2 ring-red-500/50 shadow-lg shadow-red-900/30'
               : 'border-cyan-700/40 bg-cyan-950/10'
           }`}
         >
-          {isStep4 && (
+          {isStepPower && (
             <div className="flex items-center justify-center gap-3 mb-3 text-red-400 text-xs font-bold uppercase tracking-wide">
               <span className="text-lg animate-bounce">▼</span>
               <span className="animate-pulse">Mueve este slider para controlar la potencia</span>
@@ -353,7 +353,7 @@ export function ControlPanel({
             <button
               onClick={() => { sim.insertControlRods(5); onStateChange(); }}
               disabled={!isRunning || sim.failures.controlRodsStuck}
-              className={`w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition ${tutorialHighlight(4)}`}
+              className={`w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition ${tutorialHighlight(5)}`}
             >
               <Gauge className="w-5 h-5" />
               BARRAS+
@@ -364,7 +364,7 @@ export function ControlPanel({
             <button
               onClick={() => { sim.withdrawControlRods(5); onStateChange(); }}
               disabled={!isRunning || sim.failures.controlRodsStuck}
-              className={`w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition ${tutorialHighlight(4)}`}
+              className={`w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition ${tutorialHighlight(5)}`}
             >
               <Gauge className="w-5 h-5" />
               BARRAS-

@@ -6,6 +6,7 @@ import { ControlPanel } from './components/ControlPanel';
 import { GaugeCard, ReactorCoreVisualization, AchievementBadge, ScoreBoard } from './components/Gauges';
 import { PowerTemperatureChart, PressureFlowChart, StabilityChart } from './components/Charts';
 import { WelcomeModal } from './components/WelcomeModal';
+import { ScramModal } from './components/ScramModal';
 import { InstrumentsPanel } from './components/InstrumentsPanel';
 import { TutorialGuide } from './components/TutorialGuide';
 import { Tooltip } from './components/Tooltip';
@@ -36,6 +37,11 @@ export default function App() {
   const [tutorialStep, setTutorialStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState([]);
   const powerInRangeStartRef = useRef(null);
+
+  // SCRAM modal
+  const [showScramModal, setShowScramModal] = useState(false);
+  const [scramReason, setScramReason] = useState('');
+  const scramModalShownRef = useRef(false);
 
   // Loop de simulación
   useEffect(() => {
@@ -69,6 +75,14 @@ export default function App() {
 
         if (newState.emergencyShutdown) {
           scoring.registerScram();
+          if (!scramModalShownRef.current) {
+            scramModalShownRef.current = true;
+            setScramReason(newState.scramReason || 'Condición de seguridad detectada');
+            setShowScramModal(true);
+          }
+        }
+        if (!newState.emergencyShutdown) {
+          scramModalShownRef.current = false;
         }
 
         setScoring(scoring.getState());
@@ -115,9 +129,9 @@ export default function App() {
     }
   }, [tutorialMode, tutorialStep, isRunning, completedSteps]);
 
-  // Tutorial step 4 → 5: power stabilized between 500–800 MW for 3 seconds
+  // Tutorial step 5 → 6: power stabilized between 500–800 MW for 3 seconds
   useEffect(() => {
-    if (!tutorialMode || tutorialStep !== 4 || completedSteps.includes(4)) return;
+    if (!tutorialMode || tutorialStep !== 5 || completedSteps.includes(5)) return;
     if (state.power >= 500 && state.power <= 800) {
       if (!powerInRangeStartRef.current) {
         powerInRangeStartRef.current = Date.now();
@@ -126,8 +140,8 @@ export default function App() {
       if (elapsed >= 3) {
         simulatorRef.current.logEvent('✓ Potencia estabilizada en rango 500–800 MW', 'info');
         setState(simulatorRef.current.getState());
-        setCompletedSteps(prev => [...prev, 4]);
-        setTutorialStep(5);
+        setCompletedSteps(prev => [...prev, 5]);
+        setTutorialStep(6);
         powerInRangeStartRef.current = null;
       }
     } else {
@@ -135,14 +149,14 @@ export default function App() {
     }
   }, [tutorialMode, tutorialStep, state.power, completedSteps]);
 
-  // Tutorial step 5 → 6: monitoring phase completes after 8 seconds
+  // Tutorial step 6 → 7: monitoring phase completes after 8 seconds
   useEffect(() => {
-    if (!tutorialMode || tutorialStep !== 5 || completedSteps.includes(5)) return;
+    if (!tutorialMode || tutorialStep !== 6 || completedSteps.includes(6)) return;
     const timer = setTimeout(() => {
       simulatorRef.current.logEvent('✓ Parámetros monitoreados — Reactor operativo', 'info');
       setState(simulatorRef.current.getState());
-      setCompletedSteps(prev => [...prev, 5]);
-      setTutorialStep(6);
+      setCompletedSteps(prev => [...prev, 6]);
+      setTutorialStep(7);
       const certAchievement = {
         id: 'certified_operator',
         name: '🎓 Operador Certificado',
@@ -203,6 +217,8 @@ export default function App() {
     setHistory([]);
     setScenario('normal');
     setNewAchievements([]);
+    setShowScramModal(false);
+    scramModalShownRef.current = false;
     lastTimeRef.current = Date.now();
     lastScoringUpdateRef.current = 0;
   };
@@ -215,6 +231,8 @@ export default function App() {
     setTutorialStep(1);
     setCompletedSteps([]);
     powerInRangeStartRef.current = null;
+    setShowScramModal(false);
+    scramModalShownRef.current = false;
     // Reset simulator to clean state for tutorial
     simulatorRef.current = new ReactorSimulator();
     scoringRef.current = new ScoringSystem();
@@ -255,6 +273,30 @@ export default function App() {
     setTutorialStep(2);
   };
 
+  const handleSafetyAcknowledge = () => {
+    simulatorRef.current.logEvent('✓ Advertencias de seguridad revisadas — listo para operar', 'info');
+    setState(simulatorRef.current.getState());
+    setCompletedSteps(prev => [...prev, 4]);
+    setTutorialStep(5);
+  };
+
+  const handleScramClose = () => setShowScramModal(false);
+
+  const handleScramRetry = () => {
+    reset();
+  };
+
+  const handleScramTutorial = () => {
+    handleStartTutorial();
+  };
+
+  const handleScramRecover = () => {
+    simulatorRef.current.resetFromScram();
+    setState(simulatorRef.current.getState());
+    setShowScramModal(false);
+    scramModalShownRef.current = false;
+  };
+
   const loadScenario = (scenarioName) => {
     setIsRunning(false);
     simulatorRef.current = new ReactorSimulator();
@@ -283,6 +325,8 @@ export default function App() {
     setScoring(scoringRef.current.getState());
     setHistory([]);
     setNewAchievements([]);
+    setShowScramModal(false);
+    scramModalShownRef.current = false;
     lastTimeRef.current = Date.now();
     lastScoringUpdateRef.current = 0;
   };
@@ -308,6 +352,27 @@ export default function App() {
       {/* WELCOME MODAL */}
       {showWelcomeModal && (
         <WelcomeModal onStartTutorial={handleStartTutorial} onFreeMode={handleFreeMode} />
+      )}
+
+      {/* SCRAM MODAL */}
+      {showScramModal && (
+        <ScramModal
+          scramReason={scramReason}
+          temperature={state.temperature}
+          pressure={state.pressure}
+          onClose={handleScramClose}
+          onRetry={handleScramRetry}
+          onTutorial={handleScramTutorial}
+          onRecover={handleScramRecover}
+        />
+      )}
+
+      {/* RED ALERT OVERLAY — visible while SCRAM is active */}
+      {state.emergencyShutdown && (
+        <div
+          className="fixed inset-0 pointer-events-none z-40 alarm-red"
+          style={{ boxShadow: 'inset 0 0 0 4px rgb(239, 68, 68)' }}
+        />
       )}
 
       <div className="max-w-7xl mx-auto">
@@ -368,6 +433,7 @@ export default function App() {
             completedSteps={completedSteps}
             onClose={handleToggleTutorial}
             onVerifySystems={handleVerifySystems}
+            onSafetyAcknowledge={handleSafetyAcknowledge}
             power={state.power}
           />
         )}

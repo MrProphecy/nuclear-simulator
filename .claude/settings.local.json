@@ -3,7 +3,9 @@
     "allow": [
       "Bash(rm -rf node_modules/.vite)",
       "Bash(npm run *)",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "PowerShell(head *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Projects\\\\nuclear-simulator\\\\nuclear-simulator\\\\nuclear-simulator\" | ForEach-Object { $_.FullName })"
     ]
   }
 }

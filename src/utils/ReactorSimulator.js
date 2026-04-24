@@ -17,6 +17,7 @@ export class ReactorSimulator {
     this.pumpRunning = true;
     this.safetySystemsActive = true;
     this.emergencyShutdown = false;
+    this.scramReason = null; // razón del último SCRAM
 
     // PARÁMETROS FÍSICOS (realistas pero ficticios)
     this.betaEffective = 0.0065; // fracción de neutrones retardados
@@ -79,6 +80,13 @@ export class ReactorSimulator {
     if (this.temperature > this.temperatureLimit) {
       this.reactividad -= 0.5; // inserción automática de barras por feedback
       this.logEvent('⚠️ ALERTA: Temperatura crítica - feedback negativo activado', 'warning');
+      if (this.safetySystemsActive && !this.emergencyShutdown) {
+        this.scramReason = `Temperatura excedió ${this.temperatureLimit}K (límite de seguridad)`;
+        this.emergencyShutdown = true;
+        this.controlRodsInserted = 100;
+        this.reactividad = -3;
+        this.logEvent('💥 SCRAM AUTOMÁTICO: Temperatura límite alcanzada', 'critical');
+      }
     }
   }
 
@@ -94,8 +102,11 @@ export class ReactorSimulator {
 
     if (this.pressure > this.pressureLimit) {
       this.logEvent('🔴 CRÍTICO: Presión primaria fuera de límites', 'critical');
-      if (this.safetySystemsActive) {
+      if (this.safetySystemsActive && !this.emergencyShutdown) {
+        this.scramReason = `Presión excedió ${this.pressureLimit} bar (límite estructural)`;
         this.emergencyShutdown = true;
+        this.controlRodsInserted = 100;
+        this.reactividad = -3;
         this.logEvent('💥 SCRAM AUTOMÁTICO activado', 'critical');
       }
     }
@@ -199,6 +210,7 @@ export class ReactorSimulator {
     this.insertControlRods(100);
     this.emergencyShutdown = true;
     this.reactividad = -3;
+    this.scramReason = 'Activaste manualmente SCRAM';
     this.logEvent('🛑 SCRAM DE EMERGENCIA ACTIVADO', 'critical');
   }
 
@@ -210,6 +222,7 @@ export class ReactorSimulator {
     this.controlRodsInserted = 50;
     this.reactividad = -1.5;
     this.power = 1;
+    this.scramReason = null;
     this.logEvent('⚛️ Reactor recuperado de SCRAM', 'warning');
   }
 
@@ -237,6 +250,15 @@ export class ReactorSimulator {
       this.coolantFlow = 0;
     } else {
       this.coolantFlow = Math.min(100, this.coolantFlow + 5 * dt);
+    }
+
+    // SCRAM automático por flujo de refrigerante crítico
+    if (this.coolantFlow < 30 && this.safetySystemsActive && !this.emergencyShutdown) {
+      this.scramReason = 'Flujo de refrigerante cayó por debajo de 30%';
+      this.emergencyShutdown = true;
+      this.controlRodsInserted = 100;
+      this.reactividad = -3;
+      this.logEvent('💥 SCRAM AUTOMÁTICO: Flujo refrigerante crítico', 'critical');
     }
 
     // Ecuaciones de estado
@@ -278,6 +300,7 @@ export class ReactorSimulator {
       controlRodsInserted: this.controlRodsInserted,
       pumpRunning: this.pumpRunning,
       emergencyShutdown: this.emergencyShutdown,
+      scramReason: this.scramReason,
       safetySystemsActive: this.safetySystemsActive,
       failures: this.failures,
       events: this.events,

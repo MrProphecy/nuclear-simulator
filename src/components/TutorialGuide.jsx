@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, Circle, ArrowRight, BookOpen, X, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Circle, ArrowRight, BookOpen, X, AlertTriangle, ShieldAlert } from 'lucide-react';
 
 const STEPS = [
   {
@@ -29,6 +29,15 @@ const STEPS = [
   },
   {
     id: 4,
+    title: 'Advertencias de seguridad',
+    instruction:
+      'Antes de ajustar la potencia, DEBES conocer los límites de seguridad del reactor. Si los superas, el sistema se apagará automáticamente (SCRAM).',
+    action: 'Lee los límites y haz clic en "Entendido, continuar"',
+    confirmText: '✓ Advertencias entendidas',
+    showSafetyButton: true,
+  },
+  {
+    id: 5,
     title: 'Estabiliza la potencia (500–800 MW)',
     instruction:
       'Usa el slider "Barras de Control" para ajustar la potencia. Más % de barras = menos potencia. Mantén la potencia entre 500 y 800 MW durante 3 segundos.',
@@ -36,7 +45,7 @@ const STEPS = [
     confirmText: '✓ Potencia estabilizada',
   },
   {
-    id: 5,
+    id: 6,
     title: 'Monitorea temperatura y presión',
     instruction:
       'Observa los medidores y gráficas. La temperatura debe mantenerse bajo 550 K y la presión bajo 155 bar. Si los valores suben, inserta más barras de control.',
@@ -44,7 +53,7 @@ const STEPS = [
     confirmText: '✓ Parámetros dentro de rango',
   },
   {
-    id: 6,
+    id: 7,
     title: '¡Reactor operativo!',
     instruction:
       '¡Felicidades! Has encendido el reactor con éxito siguiendo el procedimiento correcto. Has obtenido el logro "Operador Certificado".',
@@ -53,9 +62,9 @@ const STEPS = [
   },
 ];
 
-export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySystems, power }) {
-  const isComplete = currentStep > 6;
-  const step = STEPS[Math.min(currentStep, 6) - 1];
+export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySystems, onSafetyAcknowledge, power }) {
+  const isComplete = currentStep > 7;
+  const step = STEPS[Math.min(currentStep, 7) - 1];
 
   const powerInRange = typeof power === 'number' && power >= 500 && power <= 800;
 
@@ -70,7 +79,7 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
         <div className="flex items-center gap-3">
           {!isComplete && (
             <span className="text-blue-300 text-xs font-mono bg-blue-900/40 px-2 py-0.5 rounded">
-              Paso {currentStep}/6
+              Paso {currentStep}/7
             </span>
           )}
           <button
@@ -118,7 +127,7 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
           {/* Current step detail */}
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+              <span className={`text-white text-xs font-bold px-2 py-1 rounded-full ${step.id === 4 ? 'bg-orange-600' : 'bg-blue-600'}`}>
                 PASO {step.id}
               </span>
               <h4 className="text-white font-bold">{step.title}</h4>
@@ -133,7 +142,7 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
               </div>
             )}
 
-            {/* Step 1 verify button */}
+            {/* Step 1: verify button */}
             {step.id === 1 && !completedSteps.includes(1) && (
               <button
                 onClick={onVerifySystems}
@@ -144,10 +153,53 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
               </button>
             )}
 
-            {/* Step 4 — live power feedback + arrow to slider */}
+            {/* Step 4: safety warning panel */}
             {step.id === 4 && !completedSteps.includes(4) && (
+              <div className="space-y-3">
+                <div className="bg-red-950/40 border border-red-500/50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3 text-red-300 font-bold text-xs uppercase tracking-wide">
+                    <ShieldAlert className="w-4 h-4" />
+                    Límites críticos del reactor
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div className="grid grid-cols-3 gap-2 text-center font-semibold text-slate-400 mb-1">
+                      <span>Parámetro</span>
+                      <span className="text-yellow-400">Advertencia</span>
+                      <span className="text-red-400">SCRAM automático</span>
+                    </div>
+                    {[
+                      { param: 'Temperatura', warn: '>550 K', scram: '>600 K' },
+                      { param: 'Presión', warn: '>155 bar', scram: '>160 bar' },
+                      { param: 'Flujo refrigerante', warn: '<50%', scram: '<30%' },
+                    ].map((row) => (
+                      <div key={row.param} className="grid grid-cols-3 gap-2 text-center bg-slate-800/60 rounded-lg py-1.5 px-2">
+                        <span className="text-slate-300 text-left">{row.param}</span>
+                        <span className="text-yellow-300 font-mono">{row.warn}</span>
+                        <span className="text-red-300 font-mono font-bold">{row.scram}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-slate-400 text-xs mt-3 leading-relaxed">
+                    Si el SCRAM se activa: las barras se insertan al 100%, la reacción se detiene y
+                    deberás esperar que temperatura y presión bajen antes de reiniciar.
+                  </p>
+                  <p className="text-blue-300 text-xs mt-2 italic">
+                    Esto es exactamente lo que falló en Chernobyl: los operadores ignoraron estas advertencias.
+                  </p>
+                </div>
+                <button
+                  onClick={onSafetyAcknowledge}
+                  className="bg-orange-600 hover:bg-orange-500 text-white font-bold py-2 px-4 rounded-lg transition text-sm flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Entendido, continuar al paso 5
+                </button>
+              </div>
+            )}
+
+            {/* Step 5 — live power feedback + arrow to slider */}
+            {step.id === 5 && !completedSteps.includes(5) && (
               <div className="space-y-2">
-                {/* Arrow pointing to slider below */}
                 <div className="flex items-center gap-2 text-red-400 font-bold text-xs uppercase tracking-wide">
                   <span className="text-base animate-bounce">↓</span>
                   <span className="animate-pulse">
@@ -156,7 +208,6 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
                   <span className="text-base animate-bounce">↓</span>
                 </div>
 
-                {/* Live power meter */}
                 <div
                   className={`flex items-center justify-between rounded-lg px-3 py-2 border ${
                     powerInRange
@@ -174,7 +225,6 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
                   </span>
                 </div>
 
-                {/* Validation feedback */}
                 {powerInRange ? (
                   <div className="flex items-center gap-2 text-green-400 text-sm font-medium bg-green-900/30 rounded-lg px-3 py-2 border border-green-600/40">
                     <CheckCircle className="w-4 h-4 flex-shrink-0" />
@@ -197,13 +247,12 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
             )}
           </div>
 
-          {/* Steps overview sidebar — HISTORIAL DE ACCIONES */}
+          {/* Steps overview sidebar */}
           <div className="space-y-1">
             <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest mb-2">Historial</p>
             {STEPS.map((s) => {
               const done = completedSteps.includes(s.id);
               const active = s.id === currentStep;
-              const pending = !done && !active;
 
               return (
                 <div
