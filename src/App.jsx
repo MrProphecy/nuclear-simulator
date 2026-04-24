@@ -26,11 +26,13 @@ export default function App() {
   const lastTimeRef = useRef(Date.now());
   const lastScoringUpdateRef = useRef(0);
 
-  // Tutorial state
+  // Tutorial state — show modal only on first visit (no tutorialMode key yet)
   const [showWelcomeModal, setShowWelcomeModal] = useState(
-    () => !localStorage.getItem('nuclear_sim_visited')
+    () => localStorage.getItem('tutorialMode') === null
   );
-  const [tutorialMode, setTutorialMode] = useState(false);
+  const [tutorialMode, setTutorialMode] = useState(
+    () => localStorage.getItem('tutorialMode') === 'true'
+  );
   const [tutorialStep, setTutorialStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState([]);
   const powerInRangeStartRef = useRef(null);
@@ -207,7 +209,7 @@ export default function App() {
 
   // Tutorial handlers
   const handleStartTutorial = () => {
-    localStorage.setItem('nuclear_sim_visited', 'true');
+    localStorage.setItem('tutorialMode', 'true');
     setShowWelcomeModal(false);
     setTutorialMode(true);
     setTutorialStep(1);
@@ -227,18 +229,21 @@ export default function App() {
     lastScoringUpdateRef.current = 0;
   };
 
-  const handleSkipTutorial = () => {
-    localStorage.setItem('nuclear_sim_visited', 'true');
+  const handleFreeMode = () => {
+    localStorage.setItem('tutorialMode', 'false');
     setShowWelcomeModal(false);
+    setTutorialMode(false);
   };
 
   const handleToggleTutorial = () => {
     if (!tutorialMode) {
+      localStorage.setItem('tutorialMode', 'true');
       setTutorialMode(true);
       setTutorialStep(1);
       setCompletedSteps([]);
       powerInRangeStartRef.current = null;
     } else {
+      localStorage.setItem('tutorialMode', 'false');
       setTutorialMode(false);
     }
   };
@@ -302,7 +307,7 @@ export default function App() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-6">
       {/* WELCOME MODAL */}
       {showWelcomeModal && (
-        <WelcomeModal onStartTutorial={handleStartTutorial} onSkip={handleSkipTutorial} />
+        <WelcomeModal onStartTutorial={handleStartTutorial} onFreeMode={handleFreeMode} />
       )}
 
       <div className="max-w-7xl mx-auto">
