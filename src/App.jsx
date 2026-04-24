@@ -153,6 +153,38 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [tutorialMode, tutorialStep, completedSteps]);
 
+  // Alert sound — plays when critical parameters are exceeded (debounced to 4s)
+  const lastAlertSoundRef = useRef(0);
+  useEffect(() => {
+    if (!isRunning) return;
+    const isCritical =
+      state.temperature > 550 ||
+      state.pressure > 155 ||
+      state.coolantFlow < 30 ||
+      state.emergencyShutdown;
+    const now = Date.now();
+    if (isCritical && now - lastAlertSoundRef.current > 4000) {
+      lastAlertSoundRef.current = now;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'square';
+        osc.frequency.value = 440;
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      } catch (_) {}
+    }
+  }, [state, isRunning]);
+
+  const handleStateChange = () => {
+    setState(simulatorRef.current.getState());
+  };
+
   const toggleSimulation = () => {
     lastTimeRef.current = Date.now();
     lastScoringUpdateRef.current = 0;
@@ -331,12 +363,14 @@ export default function App() {
             completedSteps={completedSteps}
             onClose={handleToggleTutorial}
             onVerifySystems={handleVerifySystems}
+            power={state.power}
           />
         )}
 
         {/* PANEL DE CONTROL */}
         <ControlPanel
           sim={sim}
+          state={state}
           isRunning={isRunning}
           onToggle={toggleSimulation}
           onReset={reset}
@@ -344,6 +378,7 @@ export default function App() {
           scenario={scenario}
           tutorialMode={tutorialMode}
           tutorialStep={tutorialStep}
+          onStateChange={handleStateChange}
         />
 
         {/* INSTRUMENTOS DEL REACTOR */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, Circle, ArrowRight, BookOpen, X } from 'lucide-react';
+import { CheckCircle, Circle, ArrowRight, BookOpen, X, AlertTriangle } from 'lucide-react';
 
 const STEPS = [
   {
@@ -13,7 +13,7 @@ const STEPS = [
   },
   {
     id: 2,
-    title: 'Enciende la bomba de refrigerante',
+    title: 'Enciende la bomba',
     instruction:
       'El refrigerante es esencial para enfriar el núcleo. Siempre debe encenderse ANTES de iniciar la reacción nuclear. Sin refrigerante la temperatura sube exponencialmente.',
     action: 'Haz clic en "BOMBA ON/OFF" en el panel de controles (se ilumina en amarillo)',
@@ -21,7 +21,7 @@ const STEPS = [
   },
   {
     id: 3,
-    title: 'Inicia la reacción nuclear',
+    title: 'Inicia la reacción',
     instruction:
       'Ahora puedes iniciar la simulación. El reactor comenzará con baja potencia y podrás observar cómo la temperatura y la presión empiezan a subir gradualmente.',
     action: 'Haz clic en el botón "INICIAR" en el panel de controles (se ilumina en amarillo)',
@@ -31,8 +31,8 @@ const STEPS = [
     id: 4,
     title: 'Estabiliza la potencia (500–800 MW)',
     instruction:
-      'Usa BARRAS+ para insertar barras de boro y reducir la potencia, o BARRAS- para retirarlas y aumentarla. Mantén la potencia entre 500 y 800 MW durante 3 segundos.',
-    action: 'Ajusta los controles de barras hasta que la Potencia esté entre 500 y 800 MW',
+      'Usa el slider "Barras de Control" para ajustar la potencia. Más % de barras = menos potencia. Mantén la potencia entre 500 y 800 MW durante 3 segundos.',
+    action: 'Mueve el slider "Barras de Control" hasta que Potencia esté entre 500–800 MW',
     confirmText: '✓ Potencia estabilizada',
   },
   {
@@ -53,9 +53,11 @@ const STEPS = [
   },
 ];
 
-export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySystems }) {
+export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySystems, power }) {
   const isComplete = currentStep > 6;
   const step = STEPS[Math.min(currentStep, 6) - 1];
+
+  const powerInRange = typeof power === 'number' && power >= 500 && power <= 800;
 
   return (
     <div className="bg-gradient-to-br from-blue-950/70 to-slate-800 rounded-xl border-2 border-blue-500/60 p-4 mb-6">
@@ -131,6 +133,7 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
               </div>
             )}
 
+            {/* Step 1 verify button */}
             {step.id === 1 && !completedSteps.includes(1) && (
               <button
                 onClick={onVerifySystems}
@@ -141,6 +144,51 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
               </button>
             )}
 
+            {/* Step 4 — live power feedback + arrow to slider */}
+            {step.id === 4 && !completedSteps.includes(4) && (
+              <div className="space-y-2">
+                {/* Arrow pointing to slider below */}
+                <div className="flex items-center gap-2 text-red-400 font-bold text-xs uppercase tracking-wide">
+                  <span className="text-base animate-bounce">↓</span>
+                  <span className="animate-pulse">
+                    Usa el slider "Barras de Control" en el panel de arriba
+                  </span>
+                  <span className="text-base animate-bounce">↓</span>
+                </div>
+
+                {/* Live power meter */}
+                <div
+                  className={`flex items-center justify-between rounded-lg px-3 py-2 border ${
+                    powerInRange
+                      ? 'bg-green-900/40 border-green-600/50'
+                      : 'bg-red-900/30 border-red-600/40'
+                  }`}
+                >
+                  <span className="text-sm text-slate-300">Potencia actual:</span>
+                  <span
+                    className={`text-xl font-bold tabular-nums ${
+                      powerInRange ? 'text-green-400' : 'text-red-400'
+                    }`}
+                  >
+                    {typeof power === 'number' ? power.toFixed(0) : '—'} MW
+                  </span>
+                </div>
+
+                {/* Validation feedback */}
+                {powerInRange ? (
+                  <div className="flex items-center gap-2 text-green-400 text-sm font-medium bg-green-900/30 rounded-lg px-3 py-2 border border-green-600/40">
+                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                    ¡Correcto! Potencia estabilizada. Mantén el rango 3 segundos para continuar →
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-yellow-200 text-sm bg-yellow-900/30 rounded-lg px-3 py-2 border border-yellow-600/40">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 text-yellow-400" />
+                    Fuera de rango (necesitas 500–800 MW). Mueve el slider de Barras de Control.
+                  </div>
+                )}
+              </div>
+            )}
+
             {completedSteps.includes(step.id) && (
               <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
                 <CheckCircle className="w-4 h-4" />
@@ -149,29 +197,39 @@ export function TutorialGuide({ currentStep, completedSteps, onClose, onVerifySy
             )}
           </div>
 
-          {/* Steps overview sidebar */}
-          <div className="space-y-1.5">
-            {STEPS.map((s) => (
-              <div
-                key={s.id}
-                className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded transition ${
-                  s.id === currentStep
-                    ? 'bg-blue-600/30 border border-blue-600/40 text-white'
-                    : completedSteps.includes(s.id)
-                    ? 'text-green-400'
-                    : 'text-slate-500'
-                }`}
-              >
-                {completedSteps.includes(s.id) ? (
-                  <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                ) : s.id === currentStep ? (
-                  <ArrowRight className="w-3 h-3 flex-shrink-0 text-blue-400" />
-                ) : (
-                  <Circle className="w-3 h-3 flex-shrink-0" />
-                )}
-                <span className="truncate">{s.title}</span>
-              </div>
-            ))}
+          {/* Steps overview sidebar — HISTORIAL DE ACCIONES */}
+          <div className="space-y-1">
+            <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest mb-2">Historial</p>
+            {STEPS.map((s) => {
+              const done = completedSteps.includes(s.id);
+              const active = s.id === currentStep;
+              const pending = !done && !active;
+
+              return (
+                <div
+                  key={s.id}
+                  className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded transition ${
+                    active
+                      ? 'bg-blue-600/30 border border-blue-600/40 text-white'
+                      : done
+                      ? 'text-green-400'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {done ? (
+                    <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 text-green-500" />
+                  ) : active ? (
+                    <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 text-blue-400" />
+                  ) : (
+                    <Circle className="w-3.5 h-3.5 flex-shrink-0 text-slate-600" />
+                  )}
+                  <span className={`truncate ${done ? 'line-through opacity-70' : ''}`}>
+                    {s.title}
+                  </span>
+                  {done && <span className="ml-auto text-green-500 flex-shrink-0">✓</span>}
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : null}

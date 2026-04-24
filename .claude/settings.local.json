@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(rm -rf node_modules/.vite)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "PowerShell(Get-Content *)"
     ]
   }
 }

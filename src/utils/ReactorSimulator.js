@@ -125,6 +125,21 @@ export class ReactorSimulator {
   }
 
   /**
+   * Establecer posición de barras de control directamente (desde slider)
+   */
+  setControlRods(newValue) {
+    if (this.failures.controlRodsStuck) {
+      this.logEvent('❌ Barras de control ATASCADAS — no se pueden mover', 'critical');
+      return;
+    }
+    const clamped = Math.max(0, Math.min(100, newValue));
+    const delta = clamped - this.controlRodsInserted;
+    this.controlRodsInserted = clamped;
+    this.reactividad -= (delta / 100) * 1.2;
+    this.reactividad = Math.max(-3, Math.min(3, this.reactividad));
+  }
+
+  /**
    * Aumentar potencia manualmente
    */
   increasePower(amount) {
