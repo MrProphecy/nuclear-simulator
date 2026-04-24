@@ -25,6 +25,8 @@ export class ReactorSimulator {
     this.pressureLimit = 160; // bar máximo seguro
     this.temperatureLimit = 600; // K máxima segura
 
+    this.time = 0;
+
     // HISTORIA DE EVENTOS
     this.events = [];
     this.logEvent('Sistema iniciado', 'info');
@@ -36,8 +38,6 @@ export class ReactorSimulator {
       controlRodsStuck: false,
       safetyDisabled: false
     };
-
-    this.time = 0;
   }
 
   /**
