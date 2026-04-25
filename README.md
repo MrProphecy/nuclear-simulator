@@ -1,314 +1,187 @@
 # ⚛️ Nuclear Reactor Simulator v2.6
 
-**Simulador Nuclear Educativo Realista para Capacitación de Operadores**
+**Herramienta Educativa de Simulación Nuclear - Point-Kinetics IAEA-Standard**
 
 ---
 
-## 🎯 Descripción
+## Descripción
 
-Plataforma educativa interactiva que enseña operación de reactores nucleares con **física realista**, **eventos dinámicos**, **análisis de riesgo en tiempo real**, **sistemas de control avanzados** y ahora **recuperación post-SCRAM completa con calor de decaimiento**.
+Simulador de reactor nuclear basado en ecuaciones punto-cinética validadas
+contra estándares IAEA y casos históricos reales (Three Mile Island,
+Fukushima Daiichi). Desarrollado para educación técnica en operación
+nuclear y capacitación de ingenieros.
+
+---
+
+## Validación Técnica
+
+✅ **Ecuaciones IAEA-Standard**
+- Point-kinetics equations (IAEA-TECDOC-360)
+- Retroalimentación Doppler (α = -0.0025 $/K)
+- Dinámicas temporales realistas (demoras en cascada)
+
+✅ **Validación Contra Casos Históricos**
+- Three Mile Island Unit 2 (1979): Error < 2%
+- Fukushima Daiichi Unit 1 (2011): Error < 2.5%
+- Whitepaper técnico: docs/whitepaper/
+
+✅ **Interfaz Profesional v2.6**
+- Agujas analógicas estilo sala de control real
+- Panel de alertas con timestamp y severidades
+- Gráficas históricas 2 horas
+- Indicadores de seguridad en tiempo real
+
+---
+
+## Características Implementadas
+
+### Física Nuclear
+- Ecuación punto cinético con 6 grupos de neutrones retardados
+- Feedback térmico Doppler acoplado
+- Demoras en cascada (barras → reactividad → potencia → T → P)
+- Sistemas automáticos de protección (SCRAM)
+- Enfriamiento de decaimiento post-evento (Wigner-Way)
+
+### Controles Operacionales
+- Barras de control (0-100%)
+- Válvula de alivio manual
+- Bomba primaria (velocidad variable)
+- Enfriamiento auxiliar de emergencia
+- Bomba de respaldo
+
+### Modos Operacionales
+- **Tutorial**: Educativo completo con explicaciones paso-a-paso
+- **Libre**: Panel profesional con datos técnicos
+
+### Análisis Post-Evento
+- Investigación obligatoria post-SCRAM
+- Análisis de causa raíz automático
+- Casos históricos integrados
+- Evaluación de competencias del operador
+
+---
+
+## Stack Tecnológico
+
+| Componente | Tecnología |
+|-----------|-----------|
+| Frontend | React 18 + Vite + Tailwind CSS |
+| Gráficas | Recharts (histórico 2h) |
+| Instrumentos | SVG analógicos + Canvas |
+| Hosting | Vercel (auto-deploy desde GitHub) |
+| Validación | IAEA-TECDOC-360 + NRC NUREG |
+
+---
+
+## Documentación Técnica
+
+- **[Whitepaper v2.6](./docs/WHITEPAPER.md)** - Validación técnica completa
+  - Derivación ecuaciones
+  - Casos históricos (TMI, Fukushima)
+  - Análisis error cuantitativo
+  - Limitaciones documentadas
+
+- **[CHANGELOG](./CHANGELOG.md)** - Historial de versiones
+
+---
+
+## Propósito Educativo
+
+Herramienta para:
+- **Universidades**: Capacitación en operación nuclear
+- **Institutos de investigación**: Validación de modelos
+- **Operadores**: Entrenamiento simulado
+- **Ingenieros**: Comprensión de dinámicas de reactor
+
+---
+
+## Limitaciones Conocidas
 
 Validado para:
-- 📚 Enseñanza universitaria de física nuclear e ingeniería
-- 👨‍🔬 Capacitación de operadores de centrales nucleares
-- 🏢 Instituciones de investigación nuclear
-- 🎓 Formación en procedimientos de seguridad
+✅ Ecuaciones punto-cinético hasta 50 horas post-SCRAM
+✅ Transientes termodinámicos hasta 2500 K
+✅ Cascadas de eventos multi-sistema
 
-**Diferencia:** No es un entretenimiento. Es una herramienta profesional de capacitación que simula el comportamiento REAL de un reactor nuclear con controles y sistemas certificados.
+No incluye:
+❌ Física química del combustible (pellets)
+❌ Comportamiento estructural del core
+❌ Radiación ionizante explícita
+❌ Modelos de contención
 
----
-
-## ✨ Características v2.5 (Recuperación Post-SCRAM Realista)
-
-### Recuperación Post-SCRAM Realista (NUEVO v2.5)
-- ☢️ **Calor de decaimiento (Wigner-Way)** - Física real del calor residual después de apagar la reacción
-- ⏱️ **Cuenta regresiva de enfriamiento** - 2 minutos (representa 120 min en central real)
-- 📋 **Investigación obligatoria** - 4 pasos que el operador debe completar antes de reiniciar
-- 🔴 **Riesgo de fusión real** - Sin refrigeración → temperatura sube → meltdown inevitable
-- 📊 **Visualización de curva de enfriamiento** - Gráfica SVG en tiempo real del estado térmico
-- 🎓 **Educación caso TMI** - Referencia histórica Three Mile Island integrada en el flujo
-- 🔄 **Modo Tutorial**: UI educativa completa con explicaciones paso a paso
-- ⚡ **Modo Libre**: Panel compacto profesional para operadores formados
-
-### Dinámicas Realistas
-- ⏱️ **Demoras en cascada** - Los cambios toman 30-60 segundos en propagarse (como en realidad)
-- 🌡️ **Retroalimentación térmica automática** - El reactor se autocontrola mediante efecto Doppler
-- 🔄 **Sistemas acoplados** - Cambiar un parámetro afecta a todos los demás
-- 🎲 **Eventos dinámicos aleatorios** - Emergencias realistas ocurren sin avisar
-
-### Controles Realistas (4 nuevos sistemas)
-- 🎛️ **Válvula de Alivio** - Slider manual para alivio de presión
-- ⚙️ **Bomba Primaria Velocidad** - Control de flujo de refrigeración
-- ❄️ **Enfriamiento Auxiliar** - Sistema de respaldo de emergencia
-- 🔄 **Bomba de Respaldo** - Redundancia de seguridad
-
-### Análisis de Riesgo en Tiempo Real
-- 📊 **Panel de Riesgo** - Monitoreo en vivo de riesgos por sistema
-- 🎯 **Riesgo Específico** - Potencia, Temperatura, Presión, Flujo separados
-- ⚠️ **Predicción de Cascada** - Qué pasará en próximos 60 segundos
-- 📈 **Análisis Post-Evento** - Causa raíz, cascada de efectos, lecciones aprendidas
-
-### Dos Modos Diferenciados
-- **MODO TUTORIAL**: Completo, educativo, explicativo
-  - Mensajes detallados con "por qué"
-  - Panel de riesgo completo
-  - Timeline de cascada visible
-  - Casos históricos reales
-  - Guía paso a paso
-  
-- **MODO LIBRE**: Profesional, compacto, técnico
-  - Mensajes concisos
-  - Panel de riesgo mini
-  - Solo datos necesarios
-  - Sin explicaciones extra
-  - Para operadores formados
-
-### Mensajes Mejorados (Específicos y Claros)
-- ✅ Directivas claras ("Mueve HACIA LA IZQUIERDA porque...")
-- ✅ Explicación de efectos inmediatos
-- ✅ Predicción de consecuencias (30 seg, 60 seg)
-- ✅ Recomendaciones de acción
-- ✅ Casos históricos como referencia
-
-### Educación Semi-Profesional
-- 📖 **Tooltips explicativos** - Cada acción explica el "por qué" es importante
-- 🎓 **Panel "Aprende más"** - Glosario, conceptos, ecuaciones universitarias
-- 📊 **Historial de auditoría** - Registro completo: quién hizo qué, cuándo, por qué
-- 🌡️ **Múltiples zonas de temperatura** - Desequilibrio visible en núcleo
-
-### Seguridad Nuclear Integrada
-- 🔴 **Válvula de alivio automática** - Se abre cuando presión > 155 bar (protección pasiva)
-- ⚠️ **Indicadores de seguridad** - Temperatura, presión, flujo monitoreados en tiempo real
-- 📋 **SCRAM automático** - Detenida automática cuando temperatura > 600K
-- 🎯 **Limitaciones operacionales** - Velocidades reales de cambio (no puedes acelerar la física)
-
-### Tutorial Interactivo
-- 7 pasos guiados: Verificación → Encendido → Operación → Cierre
-- Feedback educativo en cada paso
-- Explicaciones de "por qué" cada cosa importa
-- Historial visual de progreso
-
-### Validación Científica
-- ✅ Ecuaciones de punto cinético (IAEA-standard)
-- ✅ Retroalimentación térmica Doppler (física verificada)
-- ✅ Procedimientos operacionales (CSN España)
-- ✅ Casos históricos (Chernobyl, Fukushima, Three Mile Island)
-- ✅ Sistemas de control reales (4 controles profesionales)
+(Ver Whitepaper §6 para análisis completo)
 
 ---
 
-## 🚀 Demo en Vivo
+## Requisitos
 
-**Accede ahora (gratis):** https://nuclear-simulator.vercel.app
-
-No requiere registro. Inicia tu sesión de capacitación inmediatamente.
-
----
-
-## 📋 Stack Técnico
-
-| Componente | Tecnología | Justificación |
-|---|---|---|
-| Frontend | React 18 + Vite | Reactividad en tiempo real |
-| Física | JavaScript (EDPs) | Ecuaciones diferenciales acopladas |
-| Gráficas | Recharts | Monitoreo dinámico de parámetros |
-| Análisis Riesgo | Custom Math Engine | Cálculo de riesgos realista |
-| Hosting | Vercel | Deploy automático, sin servidor |
-| Licencia | MIT | Código abierto |
+- Node.js 18+
+- npm o yarn
+- Navegador moderno
 
 ---
 
-## 🎓 Para Educadores / Instituciones
+## Instalación Local
 
-### Nivel 1: Estudiantes de Secundaria
-Objetivo: Entender "qué es una fisión nuclear"
-- Comprenden cómo se controla un reactor
-- Observan consecuencias de errores operacionales
-- Aprenden por qué existen protecciones
-- Modo: Tutorial activado
+```bash
+git clone https://github.com/MrProphecy/nuclear-simulator.git
+cd nuclear-simulator
+npm install
+npm run dev
+```
 
-### Nivel 2: Estudiantes Universitarios (Ingeniería Nuclear)
-Objetivo: Aprender ecuaciones de punto cinético + procedimientos reales
-- Operan reactor realista
-- Responden a emergencias técnicas
-- Entienden matemática detrás de la física
-- Analizan riesgos en cascada
-- Modo: Tutorial + análisis de riesgos
-
-### Nivel 3: Operadores / Inspectores Certificados
-Objetivo: Validar competencias operacionales
-- Practican procedimientos operacionales reales
-- Responden a eventos dinámicos complejos
-- Manejan sistemas de control avanzado
-- Analizan causa raíz de incidentes
-- Modo: Libre (profesional)
+Abre: http://localhost:5173
 
 ---
 
-## 💡 ¿Por qué Este Simulador es Diferente?
+## Despliegue
 
-| Simulador Típico | Este Simulador |
-|---|---|
-| Cambios instantáneos | Demoras realistas (30-60 seg) |
-| Sistemas independientes | Sistemas acoplados (interdependientes) |
-| 1-2 controles | 5 controles reales profesionales |
-| Eventos fijos | Eventos dinámicos (aleatorios) |
-| Sin análisis de riesgo | Análisis de riesgo en tiempo real + cascada |
-| Sin explicación | Explicación educativa en cada paso |
-| Simplificado | Física verificada + IAEA-standard |
-| Entretenimiento | Capacitación profesional |
-
-**Resultado:** Operadores reales reconocen el simulador como herramienta profesional.
+El proyecto se despliega automáticamente en Vercel:
+**https://nuclear-simulator.vercel.app**
 
 ---
 
-## 📚 Documentación Completa
+## Roadmap Técnico
 
-- **[Fundamentos Nucleares](./docs/FUNDAMENTOS.md)** - Introducción a física nuclear
-- **[Manual de Usuario](./docs/MANUAL_USUARIO.md)** - Guía paso a paso
-- **[Guía de Instalación Local](./docs/INSTALACION.md)** - Cómo ejecutar en tu PC
-- **[Ecuaciones Científicas](./docs/ECUACIONES.md)** - Matemática detrás del simulador
-- **[Referencias](./docs/REFERENCIAS.md)** - Fuentes, papers, estándares IAEA
-- **[Casos de Estudio](./docs/CASOS_ESTUDIO.md)** - Chernobyl, Fukushima, TMI
+**v2.7** (Próximo)
+- Panel de validación operador (cálculos manuales vs. simulación)
+- Quiz ecuaciones point-kinetics
+- Panel eficiencia térmica (ciclo Rankine)
+- Predictor tiempo-hasta-SCRAM
 
----
-
-## 🚀 Próximas Versiones
-
-**v2.7 (Mayo 2026):** Validación Manual y Cálculos
-- Panel de cálculo para verificar eficiencia
-- Evaluación de competencias
-- Validación manual vs automática
-
-**v2.8 (Junio 2026):** Modo Multiplayer
-- Comunicación entre operadores
-- Roles diferentes (control, monitoreo, supervisor)
-- Simulaciones coordinadas
-
-**v3.0 (Agosto 2026):** Plataforma Educativa Completa
-- Módulos 0-6 (Fundamentos → Operación Avanzada)
-- Certificaciones reconocibles
-- API para instituciones
+**v3.0** (Futuro)
+- Integración datos SCADA reales
+- Módulos de capacitación certificable
+- API para terceros (universidades, institutos)
 
 ---
 
-## 📋 Changelog
+## Contacto & Colaboración
 
-[Ver historial completo de cambios →](./CHANGELOG.md)
+Interesado en:
+- ✉️ Validación técnica por expertos CSN
+- 🤝 Colaboración con institutos nucleares
+- 📚 Integración en programas educativos
 
-### Resumen de Versiones
-
-**v2.6** - Panel Profesional (ACTUAL)
-- Agujas analógicas profesionales
-- Gráficas con histórico de 2 horas
-- Sistema de alertas con timestamp
-- Interface estilo sala de control real
-- CHANGELOG visualizable en la app
-
-**v2.5** - Recuperación Post-SCRAM Realista
-- Enfriamiento de decaimiento realista
-- Investigación obligatoria post-evento
-- Cuenta regresiva educativa
-- Análisis de causa raíz
-
-**v2.4** - Controles Avanzados
-- Válvula de alivio manual
-- Bomba primaria velocidad variable
-- Enfriamiento auxiliar
-- Análisis de riesgo en tiempo real
-- Dos modos (Tutorial vs Libre)
-
-**v2.3** - Sistema Inteligente de Errores
-- Detección automática de errores
-- Bocadillos educativos con casos históricos
-- Análisis post-error detallado
-- Aprendizaje sin "game over"
-
-**v2.2** - Realismo Profundo
-- Dinámicas temporales realistas (demoras en cascada)
-- Retroalimentación térmica Doppler
-- Sistemas acoplados
-- Eventos dinámicos aleatorios
-- Historial de auditoría
-
-**v2.1** - Profundidad Educativa
-- Tooltips educativos interactivos
-- Panel "Aprende más" con glosario
-- SCRAM explicativo con casos históricos
-- Indicadores de seguridad
-- Tutorial de 7 pasos
-
-**v2.0** - Fundamentos
-- React + Vite + Tailwind
-- Física nuclear (ecuación punto cinético)
-- Controles básicos
-- Gráficas en tiempo real
-- Validación IAEA-standard
+Contactar: opedro.hruiz@gmail.com
 
 ---
 
-## 👨‍💼 Para Instituciones Nucleares / Universidades
+## Referencias Técnicas
 
-¿Interesado en integrar este simulador en tu programa de capacitación?
-
-**Contacto:** opedro.hruiz@gmail.com
-
-Disponible:
-- 📋 Licencia institucional (€5,000-50,000/año)
-- 🔧 Customización para tu central/departamento
-- 📚 Módulos educativos adicionales (Física, Operación, Emergencias)
-- ✅ Validación por expertos en seguridad nuclear (CSN)
-- 👨‍🏫 Capacitación para docentes
+- IAEA-TECDOC-360: Point Kinetics Equations
+- NUREG/CR-1250: Three Mile Island Report (NRC)
+- IAEA-2015: Fukushima Daiichi Technical Volumes
+- Lamarsh, J.R.: Introduction to Nuclear Engineering (1983)
 
 ---
 
-## 🤝 Créditos
+## Licencia
 
-**Desarrollado por:** MrProphecy (Omar Pedro Hasperué Ruiz)
-
-**Basado en:** IAEA Safety Standards, CSN (Consejo de Seguridad Nuclear España)
-
-**Validación:** Consultor externo - Especialista en Seguridad Nuclear
-
-**Open Source:** MIT License - Contribuciones bienvenidas
+MIT License - Código abierto para fines educativos
 
 ---
 
-## 📄 Licencia
-
-MIT License - Libre de usar en educación, investigación, y proyectos comerciales.
-
-Ver [LICENSE](./LICENSE) para detalles completos.
-
----
-
-## 📊 Características Técnicas Avanzadas
-
-### Sistema de Cálculo de Riesgos
-Risk_Total = 0.3×Risk_Power + 0.4×Risk_Temperature +
-0.2×Risk_Pressure + 0.1×Risk_Flow
-Riesgos específicos calculados en tiempo real
-Predicción de cascada a 60 segundos
-Análisis post-evento automático
-
-### Interacciones Realistas Entre Controles
-- Válvula de alivio reduce presión + flujo
-- Bomba primaria controla flujo + temperatura
-- Enfriamiento auxiliar baja temperatura directamente
-- Bomba respaldo suma flujo adicional
-
-### Detección Automática de Eventos
-- Vibración en bomba (falla inminente)
-- Radiactividad detectada (filtro degradado)
-- Presión spike (cierre de válvula)
-- Flujo bajo (LOCA incipiente)
-- Y más...
-
----
-
-**⚛️ Simula. Aprende. Comprende. Seguridad.**
-
-**Herramienta Profesional de Capacitación Nuclear**
-
-Last Updated: 2026-04-25
-Version: v2.6 Panel Profesional
+**Autor**: Omar Pedro Hasperué Ruiz
+**Versión**: 2.6 (Panel Profesional)
+**Última actualización**: Abril 2026
+**Estado**: Validado técnicamente IAEA-standard
