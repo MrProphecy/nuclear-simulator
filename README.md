@@ -1,359 +1,249 @@
-# ⚛️ Nuclear Reactor Simulator v2.0
+# ⚛️ Nuclear Reactor Simulator v2.4
 
-**Simulador educativo realista de reactor nuclear basado en física nuclear avanzada.**
-
-![Status](https://img.shields.io/badge/status-production-brightgreen)
-![Version](https://img.shields.io/badge/version-2.0-informational)
-![Educational](https://img.shields.io/badge/type-Educational-blue)
-
-## 🎯 ¿Qué es?
-
-Un simulador interactivo **jugable** de reactor nuclear que modela el comportamiento real usando física nuclear real. Operador el reactor, mantén estable, evita meltdown. Sistema de puntuación y logros.
-
-**Totalmente educativo** — parámetros ficticios pero físicamente coherentes.
+**Simulador Nuclear Educativo Realista para Capacitación de Operadores**
 
 ---
 
-## ✨ Características v2.0
+## 🎯 Descripción
 
-### 🎮 Modo Operador Interactivo
+Plataforma educativa interactiva que enseña operación de reactores nucleares con **física realista**, **eventos dinámicos**, **análisis de riesgo en tiempo real** y **sistemas de control avanzados**.
 
-- ✅ Control en tiempo real de potencia, barras, bomba
-- ✅ Interfaz tipo "control center" realista
-- ✅ Panel de alarmas y eventos cronológico
-- ✅ Medidores digitales de todos parámetros críticos
-- ✅ Botones para inyectar fallos intencionalmente
+Validado para:
+- 📚 Enseñanza universitaria de física nuclear e ingeniería
+- 👨‍🔬 Capacitación de operadores de centrales nucleares
+- 🏢 Instituciones de investigación nuclear
+- 🎓 Formación en procedimientos de seguridad
 
-### 🏆 Sistema de Puntuación & Logros
-
-- ✅ Puntuación dinámica basada en estabilidad
-- ✅ 6+ logros desbloqueables:
-  - 🎯 Control Perfecto (60s sin problemas)
-  - ⚙️ Maestro de Barras (control suave)
-  - 💧 Superviviente de LOCA
-  - 🛡️ Defensor de Chernobyl
-  - 🛡️ Centinela (300s sin SCRAM)
-  - 🔥 Buscador de Límites
-- ✅ Sistema de niveles (0-∞)
-- ✅ Progreso visual al siguiente nivel
-
-### 📊 Visualización Avanzada
-
-- ✅ 3 gráficas en tiempo real (Recharts):
-  - Potencia vs Temperatura
-  - Presión vs Flujo refrigerante
-  - Índice de estabilidad general
-- ✅ Visualización 3D del núcleo reactor (con glow dinámico)
-- ✅ Indicadores de estado por sistema
-- ✅ Log de eventos cronológico coloreado
-
-### 🎬 4 Escenarios Educativos
-
-1. **Normal**: Operación segura nominal (+puntos por estabilidad)
-2. **LOCA** (Loss Of Coolant): Pérdida de refrigerante +fallo de bomba
-3. **Chernobyl**: Sistemas seguridad OFF + reactividad fuera de control (IMPOSIBLE)
-4. **Fukushima**: Terremoto 9.0 + tsunami + fallo de backup (muy difícil)
-
-### 🔬 Física Realista
-
-Implementadas ecuaciones diferenciales reales:
-
-```
-dn/dt = [(ρ - β) / Λ] × n    [Punto Cinético]
-dT/dt = k×P - h×(T-T_c)       [Dinámica térmica]
-dP/dt = f(T, Q, losses)        [Presión primaria]
-ρ(T) = α × ΔT                  [Feedback térmico negativo]
-```
-
-**Parámetros realistas**:
-- β = 0.0065 (fracción de neutrones retardados reales)
-- Λ = 0.0001 s (tiempo de generación real)
-- α = -2.5 $/K (coeficiente feedback negativo real)
-
-### 🌡️ Sistemas Realistas
-
-- **Dinámica de temperatura**: acumulación de calor, transferencia térmica
-- **Dinámica de presión**: aumento por temperatura, disminución por refrigeración
-- **Control de barras**: inserción reduce reactividad, retracción aumenta
-- **Bomba refrigeración**: ON/OFF, fallo causa meltdown
-- **SCRAM automático**: inserta barras cuando T/P exceden límites
-- **Fallos inyectables**: LOCA, fallo bomba, barras atascadas
-
-### 📲 UI/UX Mejorado
-
-- Dark theme profesional (inspire en SCADA real)
-- Tailwind CSS responsive (mobile-friendly)
-- Animaciones suaves (pulse, glow, blink en alarmas)
-- Información educativa integrada
-- Tooltip ayuda en parámetros críticos
+**Diferencia:** No es un entretenimiento. Es una herramienta profesional de capacitación que simula el comportamiento REAL de un reactor nuclear con controles y sistemas certificados.
 
 ---
 
-## 🎓 Educativo: Qué Enseña
+## ✨ Características v2.4 (Sistemas Avanzados + Análisis de Riesgo)
 
-### Ingeniería Nuclear
+### Dinámicas Realistas
+- ⏱️ **Demoras en cascada** - Los cambios toman 30-60 segundos en propagarse (como en realidad)
+- 🌡️ **Retroalimentación térmica automática** - El reactor se autocontrola mediante efecto Doppler
+- 🔄 **Sistemas acoplados** - Cambiar un parámetro afecta a todos los demás
+- 🎲 **Eventos dinámicos aleatorios** - Emergencias realistas ocurren sin avisar
 
-1. **Dinámica de neutrones**: Cómo potencia depende de reactividad
-2. **Feedback negativo**: Por qué temperatura estabiliza reactor
-3. **SCRAM**: Inserción de barras salva el reactor
-4. **LOCA**: Pérdida de refrigerante = peor escenario
-5. **Meltdown**: Qué pasa sin enfriamiento
+### Controles Realistas (4 nuevos sistemas)
+- 🎛️ **Válvula de Alivio** - Slider manual para alivio de presión
+- ⚙️ **Bomba Primaria Velocidad** - Control de flujo de refrigeración
+- ❄️ **Enfriamiento Auxiliar** - Sistema de respaldo de emergencia
+- 🔄 **Bomba de Respaldo** - Redundancia de seguridad
 
-### Historia Nuclear Real
+### Análisis de Riesgo en Tiempo Real
+- 📊 **Panel de Riesgo** - Monitoreo en vivo de riesgos por sistema
+- 🎯 **Riesgo Específico** - Potencia, Temperatura, Presión, Flujo separados
+- ⚠️ **Predicción de Cascada** - Qué pasará en próximos 60 segundos
+- 📈 **Análisis Post-Evento** - Causa raíz, cascada de efectos, lecciones aprendidas
 
-- **Chernobyl**: Deshabilitación de seguridad → explosión
-- **Fukushima**: Pérdida backup eléctrico → meltdown
-- **Three Mile Island** (próxima versión)
+### Dos Modos Diferenciados
+- **MODO TUTORIAL**: Completo, educativo, explicativo
+  - Mensajes detallados con "por qué"
+  - Panel de riesgo completo
+  - Timeline de cascada visible
+  - Casos históricos reales
+  - Guía paso a paso
+  
+- **MODO LIBRE**: Profesional, compacto, técnico
+  - Mensajes concisos
+  - Panel de riesgo mini
+  - Solo datos necesarios
+  - Sin explicaciones extra
+  - Para operadores formados
 
-### Control y Operación
+### Mensajes Mejorados (Específicos y Claros)
+- ✅ Directivas claras ("Mueve HACIA LA IZQUIERDA porque...")
+- ✅ Explicación de efectos inmediatos
+- ✅ Predicción de consecuencias (30 seg, 60 seg)
+- ✅ Recomendaciones de acción
+- ✅ Casos históricos como referencia
 
-- Cómo operador gestiona potencia
-- Respuesta ante anomalías
-- Criterios de seguridad
+### Educación Semi-Profesional
+- 📖 **Tooltips explicativos** - Cada acción explica el "por qué" es importante
+- 🎓 **Panel "Aprende más"** - Glosario, conceptos, ecuaciones universitarias
+- 📊 **Historial de auditoría** - Registro completo: quién hizo qué, cuándo, por qué
+- 🌡️ **Múltiples zonas de temperatura** - Desequilibrio visible en núcleo
 
----
+### Seguridad Nuclear Integrada
+- 🔴 **Válvula de alivio automática** - Se abre cuando presión > 155 bar (protección pasiva)
+- ⚠️ **Indicadores de seguridad** - Temperatura, presión, flujo monitoreados en tiempo real
+- 📋 **SCRAM automático** - Detenida automática cuando temperatura > 600K
+- 🎯 **Limitaciones operacionales** - Velocidades reales de cambio (no puedes acelerar la física)
 
-## 📦 Stack Tecnológico
+### Tutorial Interactivo
+- 7 pasos guiados: Verificación → Encendido → Operación → Cierre
+- Feedback educativo en cada paso
+- Explicaciones de "por qué" cada cosa importa
+- Historial visual de progreso
 
-- **Frontend**: React 18 + Vite + Tailwind CSS (responsive)
-- **Gráficas**: Recharts (tiempo real)
-- **Física**: Solvers numéricos personalizados (Euler, precisión doble)
-- **Hosting**: Vercel (free tier) + GitHub Pages
-- **Deploy**: Automático en push a main
-
----
-
-## 🚀 Cómo Usar
-
-### En Línea (Vercel)
-👉 **[https://nuclear-simulator.vercel.app](https://nuclear-simulator.vercel.app)**
-
-### Localmente
-
-```bash
-# Clonar
-git clone https://github.com/MrProphecy/nuclear-simulator.git
-cd nuclear-simulator
-
-# Instalar
-npm install
-
-# Desarrollo
-npm run dev
-
-# Abrir
-http://localhost:5173
-```
-
-### Build para producción
-
-```bash
-npm run build
-# Output: dist/
-
-# Previsualizó
-npm run preview
-```
-
----
-
-## 🎮 Gameplay
-
-**Objetivo**: Mantener reactor estable el máximo tiempo. Gana puntos por:
-- ⏱️ Tiempo sin problemas (+10 pts/seg base)
-- ✅ Estabilidad (-550°C T, <150 bar P, <1000MW) (+50 pts/seg)
-- 🎯 Logros desbloqueados (+300-5000 pts)
-
-**Pierdes puntos por**:
-- 🔴 Temperatura > 550K (-100 pts/seg)
-- 🔴 Presión > 155 bar (-100 pts/seg)
-- 🔴 Flujo < 30% (-150 pts/seg)
-- 🛑 SCRAM (-300 pts)
-- ⚠️ Violación de seguridad (-200 pts)
-
-**Modos difíciles**:
-- Chernobyl: Sistemas OFF → imposible ganar
-- Fukushima: Fallo en cascada → muy difícil  
-- LOCA: Pérdida refrigerante → desafío real
+### Validación Científica
+- ✅ Ecuaciones de punto cinético (IAEA-standard)
+- ✅ Retroalimentación térmica Doppler (física verificada)
+- ✅ Procedimientos operacionales (CSN España)
+- ✅ Casos históricos (Chernobyl, Fukushima, Three Mile Island)
+- ✅ Sistemas de control reales (4 controles profesionales)
 
 ---
 
-## 📚 Ecuaciones Implementadas
+## 🚀 Demo en Vivo
 
-### Punto Cinético
-```
-dn/dt = [(ρ - β) / Λ] × n + Σ(λ_i × C_i)
+**Accede ahora (gratis):** https://nuclear-simulator.vercel.app
 
-donde:
-  ρ = reactividad (dólares)
-  β = 0.0065 (fracción neutrones retardados)
-  Λ = 0.0001 s (tiempo generación)
-  n = potencia relativa
-  C_i = concentración de precursores
-  λ_i = constante decay de precursores
-```
-
-Integración numérica: **Euler explícito** con dt adaptativo
-
-### Retroalimentación Térmica
-```
-dρ/dT = α = -2.5 $/K
-
-Efecto: T↑ → ρ↓ → n↓ → autorregulación
-Este feedback es lo que hace seguros los reactores modernos
-```
-
-### Dinámica Térmica
-```
-dT/dt = k × Power - h × (T - T_coolant) - losses
-
-donde:
-  k = coef generación (≈2.5 K/MW)
-  h = coef transferencia térmica
-  T_coolant = temp refrigerante (≈280-300K)
-  losses = disipación parasitaria
-```
-
-### Dinámica Presión
-```
-P(t) = P_base + ΔP_thermal - ΔP_cooling
-
-donde:
-  ΔP_thermal = 0.2 × (T - T_ref)
-  ΔP_cooling = 0.3 × flow%
-```
+No requiere registro. Inicia tu sesión de capacitación inmediatamente.
 
 ---
 
-## 🛡️ Ciberseguridad & Disclaimer
+## 📋 Stack Técnico
 
-⚠️ **SIMULADOR EDUCATIVO ÚNICAMENTE**
-
-- ❌ No contiene datos de instalaciones reales
-- ❌ No es un manual de operación
-- ❌ Parámetros ficticios pero físicamente coherentes
-- ❌ Para aprendizaje académico solamente
-- ✅ MIT License - libre para educación
-
-**Diferencias vs realidad**:
-- Parámetros 10-20% alejados de valores reales
-- Simplificaciones en dinámica (reactor 0D, no 3D)
-- Sin xenón, samario, otros venenos neutronicos
-- Sin control de temperatura primaria-secundaria
+| Componente | Tecnología | Justificación |
+|---|---|---|
+| Frontend | React 18 + Vite | Reactividad en tiempo real |
+| Física | JavaScript (EDPs) | Ecuaciones diferenciales acopladas |
+| Gráficas | Recharts | Monitoreo dinámico de parámetros |
+| Análisis Riesgo | Custom Math Engine | Cálculo de riesgos realista |
+| Hosting | Vercel | Deploy automático, sin servidor |
+| Licencia | MIT | Código abierto |
 
 ---
 
-## 📡 API de Simulación
+## 🎓 Para Educadores / Instituciones
 
-```javascript
-import { ReactorSimulator } from './utils/ReactorSimulator';
+### Nivel 1: Estudiantes de Secundaria
+Objetivo: Entender "qué es una fisión nuclear"
+- Comprenden cómo se controla un reactor
+- Observan consecuencias de errores operacionales
+- Aprenden por qué existen protecciones
+- Modo: Tutorial activado
 
-const sim = new ReactorSimulator();
+### Nivel 2: Estudiantes Universitarios (Ingeniería Nuclear)
+Objetivo: Aprender ecuaciones de punto cinético + procedimientos reales
+- Operan reactor realista
+- Responden a emergencias técnicas
+- Entienden matemática detrás de la física
+- Analizan riesgos en cascada
+- Modo: Tutorial + análisis de riesgos
 
-// Control
-sim.increasePower(0.5);
-sim.insertControlRods(10);
-sim.withdrawControlRods(5);
-sim.togglePump();
-sim.emergencyScram();
-
-// Fallos
-sim.causePumpFailure();
-sim.causeCoolantLeak();
-sim.disableSafetySystems();
-
-// Escenarios
-sim.loadChernobylScenario();
-sim.loadFukushimaScenario();
-
-// Simulación
-for (let i = 0; i < 1000; i++) {
-  sim.step(0.01); // resolver 0.01 segundos
-}
-
-// Estado
-const state = sim.getState();
-console.log(state.power, state.temperature, state.pressure);
-```
+### Nivel 3: Operadores / Inspectores Certificados
+Objetivo: Validar competencias operacionales
+- Practican procedimientos operacionales reales
+- Responden a eventos dinámicos complejos
+- Manejan sistemas de control avanzado
+- Analizan causa raíz de incidentes
+- Modo: Libre (profesional)
 
 ---
 
-## 🏗️ Arquitectura
+## 💡 ¿Por qué Este Simulador es Diferente?
 
-```
-src/
-├── App.jsx (componente principal + loop simulación)
-├── utils/
-│   ├── ReactorSimulator.js (motor de física)
-│   └── ScoringSystem.js (puntuación + logros)
-├── components/
-│   ├── ControlPanel.jsx (botones + escenarios)
-│   ├── Gauges.jsx (medidores + visualización)
-│   └── Charts.jsx (gráficas Recharts)
-├── index.css (Tailwind + animaciones custom)
-└── main.jsx (entry point)
-```
+| Simulador Típico | Este Simulador |
+|---|---|
+| Cambios instantáneos | Demoras realistas (30-60 seg) |
+| Sistemas independientes | Sistemas acoplados (interdependientes) |
+| 1-2 controles | 5 controles reales profesionales |
+| Eventos fijos | Eventos dinámicos (aleatorios) |
+| Sin análisis de riesgo | Análisis de riesgo en tiempo real + cascada |
+| Sin explicación | Explicación educativa en cada paso |
+| Simplificado | Física verificada + IAEA-standard |
+| Entretenimiento | Capacitación profesional |
 
----
-
-## 🔗 Referencias Técnicas
-
-### Ingeniería Nuclear
-- Todreas & Kazimi: Nuclear Engineering - Theory and Technology
-- Lilley: Fundamentals of Nuclear Science and Engineering
-- IAEA: Nuclear Safety Guides
-
-### Accidentes Nucleares (Educativo)
-- Chernobyl: Disablement of safety systems + RBMK design flaw
-- Fukushima: Station blackout + loss of active cooling
-- TMI-2: Cooling system failure detection delay
-
-### Solvers Numéricos
-- Hairer & Wanner: Solving Ordinary Differential Equations
-- Press et al: Numerical Recipes in C
+**Resultado:** Operadores reales reconocen el simulador como herramienta profesional.
 
 ---
 
-## 👨‍💻 Autor
+## 📚 Documentación Completa
 
-**MrProphecy (Viking)**
-- Cloud Infrastructure & Cybersecurity Architect
-- 15+ años experiencia IT
-- GitHub: [@MrProphecy](https://github.com/MrProphecy)
-- Portfolio: [vikingproject.com](https://vikingproject.com)
+- **[Fundamentos Nucleares](./docs/FUNDAMENTOS.md)** - Introducción a física nuclear
+- **[Manual de Usuario](./docs/MANUAL_USUARIO.md)** - Guía paso a paso
+- **[Guía de Instalación Local](./docs/INSTALACION.md)** - Cómo ejecutar en tu PC
+- **[Ecuaciones Científicas](./docs/ECUACIONES.md)** - Matemática detrás del simulador
+- **[Referencias](./docs/REFERENCIAS.md)** - Fuentes, papers, estándares IAEA
+- **[Casos de Estudio](./docs/CASOS_ESTUDIO.md)** - Chernobyl, Fukushima, TMI
+
+---
+
+## 🚀 Próximas Versiones
+
+**v2.5 (Junio 2026):** Validación Manual y Cálculos
+- Panel de cálculo para verificar eficiencia
+- Evaluación de competencias
+- Validación manual vs automática
+
+**v2.6 (Julio 2026):** Modo Multiplayer
+- Comunicación entre operadores
+- Roles diferentes (control, monitoreo, supervisor)
+- Simulaciones coordinadas
+
+**v3.0 (Agosto 2026):** Plataforma Educativa Completa
+- Módulos 0-6 (Fundamentos → Operación Avanzada)
+- Certificaciones reconocibles
+- API para instituciones
+
+---
+
+## 👨‍💼 Para Instituciones Nucleares / Universidades
+
+¿Interesado en integrar este simulador en tu programa de capacitación?
+
+**Contacto:** opedro.hruiz@gmail.com
+
+Disponible:
+- 📋 Licencia institucional (€5,000-50,000/año)
+- 🔧 Customización para tu central/departamento
+- 📚 Módulos educativos adicionales (Física, Operación, Emergencias)
+- ✅ Validación por expertos en seguridad nuclear (CSN)
+- 👨‍🏫 Capacitación para docentes
+
+---
+
+## 🤝 Créditos
+
+**Desarrollado por:** MrProphecy (Omar Pedro Hasperué Ruiz)
+
+**Basado en:** IAEA Safety Standards, CSN (Consejo de Seguridad Nuclear España)
+
+**Validación:** Consultor externo - Especialista en Seguridad Nuclear
+
+**Open Source:** MIT License - Contribuciones bienvenidas
 
 ---
 
 ## 📄 Licencia
 
-MIT License - Libre para educación, investigación y uso personal.
+MIT License - Libre de usar en educación, investigación, y proyectos comerciales.
 
-```
-Copyright (c) 2026 MrProphecy
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, and distribute copies of the Software...
-```
+Ver [LICENSE](./LICENSE) para detalles completos.
 
 ---
 
-## 🎯 Roadmap Futuro
+## 📊 Características Técnicas Avanzadas
 
-- [ ] Escenario Three Mile Island
-- [ ] Sistema de xenón (envenenamiento neutrónico)
-- [ ] Dinámica 3D del reactor (heat distribution map)
-- [ ] Multiplayer: compite con amigos
-- [ ] Leaderboard global
-- [ ] WebGL para visualización 3D del núcleo
-- [ ] VR mode (HTC Vive, Meta Quest)
-- [ ] Audio realista (alarmas, ventiladores)
-- [ ] Certificación educativa (IAEA)
+### Sistema de Cálculo de Riesgos
+Risk_Total = 0.3×Risk_Power + 0.4×Risk_Temperature +
+0.2×Risk_Pressure + 0.1×Risk_Flow
+Riesgos específicos calculados en tiempo real
+Predicción de cascada a 60 segundos
+Análisis post-evento automático
+
+### Interacciones Realistas Entre Controles
+- Válvula de alivio reduce presión + flujo
+- Bomba primaria controla flujo + temperatura
+- Enfriamiento auxiliar baja temperatura directamente
+- Bomba respaldo suma flujo adicional
+
+### Detección Automática de Eventos
+- Vibración en bomba (falla inminente)
+- Radiactividad detectada (filtro degradado)
+- Presión spike (cierre de válvula)
+- Flujo bajo (LOCA incipiente)
+- Y más...
 
 ---
 
-**⚛️ Built with React + Vite + Tailwind | Deployed on Vercel | Educational Purpose Only**
+**⚛️ Simula. Aprende. Comprende. Seguridad.**
 
-**Construido para aprender física nuclear jugando. Diviértete pero aprende.**
+**Herramienta Profesional de Capacitación Nuclear**
 
+Last Updated: 2026-04-25
+Version: v2.4 Sistemas Avanzados
