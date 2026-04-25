@@ -1,6 +1,113 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+package-lock.json
+yarn.lock
+
+# Testing
+coverage/
+.nyc_output/
+
+# Production
+dist/
+build/
+out/
+
+# Misc
+.DS_Store
 .env
 .env.local
-.DS_Store
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+
+# OS
+Thumbs.db
+.DS_Store
+
+# ═══════════════════════════════════════════════════════════════════
+# ARCHIVOS SENSIBLES (NUNCA SUBIR A GITHUB)
+# ═══════════════════════════════════════════════════════════════════
+
+# Estrategia de monetización (PRIVADO)
+MONETIZATION_GUIDE.md
+MONETIZATION_*.md
+monetization/
+business_strategy.md
+BUSINESS_*.md
+
+# Claves y tokens (NUNCA)
+.secrets/
+secrets.json
+API_KEYS.txt
+.env.secrets
+credentials.json
+tokens/
+*.key
+*.pem
+
+# Información sensible
+private/
+internal/
+confidential/
+CONFIDENTIAL_*.md
+sensitive/
+
+# Datos personales
+contacts.json
+email_list.txt
+phone_numbers.txt
+personal_info/
+
+# Archivos de configuración privada
+.local/
+.private/
+config.private.js
+settings.private.json
+
+# Backups y temporales
+*.bak
+*.backup
+.tmp/
+temp/
+
+# ═══════════════════════════════════════════════════════════════════
+
+# Vite
+.vite/
+
+# VS Code extensions
+.vscode/extensions
+
+# macOS
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+.Trash-*
