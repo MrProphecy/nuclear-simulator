@@ -1,4 +1,4 @@
-# ⚛️ Nuclear Reactor Simulator v2.4
+# ⚛️ Nuclear Reactor Simulator v2.5
 
 **Simulador Nuclear Educativo Realista para Capacitación de Operadores**
 
@@ -6,7 +6,7 @@
 
 ## 🎯 Descripción
 
-Plataforma educativa interactiva que enseña operación de reactores nucleares con **física realista**, **eventos dinámicos**, **análisis de riesgo en tiempo real** y **sistemas de control avanzados**.
+Plataforma educativa interactiva que enseña operación de reactores nucleares con **física realista**, **eventos dinámicos**, **análisis de riesgo en tiempo real**, **sistemas de control avanzados** y ahora **recuperación post-SCRAM completa con calor de decaimiento**.
 
 Validado para:
 - 📚 Enseñanza universitaria de física nuclear e ingeniería
@@ -18,7 +18,17 @@ Validado para:
 
 ---
 
-## ✨ Características v2.4 (Sistemas Avanzados + Análisis de Riesgo)
+## ✨ Características v2.5 (Recuperación Post-SCRAM Realista)
+
+### Recuperación Post-SCRAM Realista (NUEVO v2.5)
+- ☢️ **Calor de decaimiento (Wigner-Way)** - Física real del calor residual después de apagar la reacción
+- ⏱️ **Cuenta regresiva de enfriamiento** - 2 minutos (representa 120 min en central real)
+- 📋 **Investigación obligatoria** - 4 pasos que el operador debe completar antes de reiniciar
+- 🔴 **Riesgo de fusión real** - Sin refrigeración → temperatura sube → meltdown inevitable
+- 📊 **Visualización de curva de enfriamiento** - Gráfica SVG en tiempo real del estado térmico
+- 🎓 **Educación caso TMI** - Referencia histórica Three Mile Island integrada en el flujo
+- 🔄 **Modo Tutorial**: UI educativa completa con explicaciones paso a paso
+- ⚡ **Modo Libre**: Panel compacto profesional para operadores formados
 
 ### Dinámicas Realistas
 - ⏱️ **Demoras en cascada** - Los cambios toman 30-60 segundos en propagarse (como en realidad)

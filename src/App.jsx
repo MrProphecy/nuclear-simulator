@@ -11,6 +11,18 @@ import { InstrumentsPanel } from './components/InstrumentsPanel';
 import { TutorialGuide } from './components/TutorialGuide';
 import { EducationPanel } from './components/EducationPanel';
 import { Tooltip } from './components/Tooltip';
+import { ErrorFeedback } from './components/ErrorFeedback';
+import { TutorialFeedback } from './components/TutorialFeedback';
+import { ErrorDetector } from './utils/ErrorDetector';
+import { RiskPanel } from './components/RiskPanel';
+import { RiskTooltips } from './components/RiskTooltips';
+import { EventAnalysis } from './components/EventAnalysis';
+import { CascadeTimeline } from './components/CascadeTimeline';
+import { PostEventAnalysis } from './components/PostEventAnalysis';
+import { PostScramRecovery } from './components/PostScramRecovery';
+import { AdvancedControls } from './components/AdvancedControls';
+import { ContextualHints } from './components/ContextualHints';
+import { isInvestigationComplete } from './utils/ScramInvestigationLogic';
 
 // ── INDICADOR DE PACIENCIA ────────────────────────────────────────────────────
 function PatienceIndicator({ isStabilizing, stabilizationProgress, lastActionName, pendingChanges }) {
@@ -211,15 +223,127 @@ function RandomEventAlert({ alert, onDismiss }) {
   );
 }
 
+// ── ANÁLISIS POST-SCRAM ───────────────────────────────────────────────────────
+const SCRAM_LESSONS = {
+  SCRAM_AUTO_TEMP:   'Gestión de temperatura: inserta barras cuando T supere 500 K, no esperes al límite.',
+  SCRAM_AUTO_PRESS:  'Control de presión: la presión sigue a la temperatura — controlando T controlas P.',
+  SCRAM_AUTO_FLOW:   'Refrigeración primaria: flujo < 50% es zona de alerta, < 30% es SCRAM inevitable.',
+  SCRAM_MANUAL:      'Buen instinto: activaste el SCRAM manualmente antes de que la situación se saliera de control.',
+  DEFAULT:           'Paciencia y atención constante — un ajuste cada vez, espera la estabilización antes del siguiente.',
+};
+
+function IncidentAnalysis({ events, operationLog, scramReason }) {
+  const timeline = React.useMemo(() => {
+    const entries = [];
+
+    (events ?? []).forEach(e => {
+      entries.push({
+        simTime: parseFloat(e.time) || 0,
+        wallTime: e.timestamp,
+        kind: 'event',
+        text: e.message,
+        level: e.level,
+      });
+    });
+
+    (operationLog ?? []).forEach(op => {
+      entries.push({
+        simTime: parseFloat(op.simTime) || 0,
+        wallTime: op.timestamp,
+        kind: 'op',
+        text: `${op.action} — ${op.reason}`,
+        level: ['SCRAM_AUTO_TEMP','SCRAM_AUTO_PRESS','SCRAM_AUTO_FLOW','SCRAM_MANUAL','DESHABILITAR_SEGURIDAD','FALLO_BOMBA','FALLO_LOCA'].includes(op.action) ? 'critical' : 'info',
+      });
+    });
+
+    entries.sort((a, b) => a.simTime - b.simTime);
+    return entries.slice(-14); // show last 14 entries
+  }, [events, operationLog]);
+
+  const criticalCount = timeline.filter(e => e.level === 'critical').length;
+  const duration = timeline.length > 1
+    ? (timeline[timeline.length - 1].simTime - timeline[0].simTime).toFixed(0)
+    : '0';
+
+  // Pick lesson based on operation log
+  const lastScramOp = (operationLog ?? []).slice().reverse().find(op =>
+    Object.keys(SCRAM_LESSONS).includes(op.action)
+  );
+  const lesson = SCRAM_LESSONS[lastScramOp?.action ?? 'DEFAULT'] ?? SCRAM_LESSONS.DEFAULT;
+
+  const rowColor = { critical: 'text-red-400', warning: 'text-yellow-400', info: 'text-slate-400' };
+  const rowIcon  = { critical: '🔴', warning: '⚠️', info: '✓' };
+
+  return (
+    <div className="bg-gradient-to-br from-slate-900/90 to-red-950/20 border border-red-700/40 rounded-xl p-5 mb-6">
+      <h2 className="text-white font-bold text-base mb-4 flex items-center gap-2">
+        📊 ANÁLISIS DEL INCIDENTE
+      </h2>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Timeline */}
+        <div className="lg:col-span-2">
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-2">Línea de tiempo</p>
+          <div className="bg-slate-950/70 rounded-lg border border-slate-700/40 overflow-hidden">
+            <div className="max-h-56 overflow-y-auto font-mono text-xs">
+              {timeline.map((entry, i) => (
+                <div key={i} className={`flex items-start gap-2 px-3 py-1.5 border-b border-slate-800/50 ${rowColor[entry.level] ?? 'text-slate-400'}`}>
+                  <span className="flex-shrink-0 w-12 tabular-nums text-slate-600">{entry.simTime.toFixed(1)}s</span>
+                  <span className="flex-shrink-0">{rowIcon[entry.level] ?? '·'}</span>
+                  <span className="text-slate-400 text-xs flex-shrink-0 w-16 hidden sm:block">{entry.wallTime}</span>
+                  <span className="truncate">{entry.text}</span>
+                </div>
+              ))}
+              {timeline.length === 0 && (
+                <p className="px-3 py-3 text-slate-600 text-xs">Sin eventos registrados.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Summary */}
+        <div className="space-y-3">
+          <div className="bg-slate-800/60 border border-slate-600/30 rounded-lg p-3 space-y-2">
+            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-2">Resumen</p>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-400">Duración registrada:</span>
+              <span className="text-white font-mono font-bold">{duration} s</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-400">Eventos críticos:</span>
+              <span className={`font-mono font-bold ${criticalCount > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                {criticalCount}
+              </span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-400">Causa del SCRAM:</span>
+              <span className="text-orange-300 font-bold text-right max-w-28 leading-tight">
+                {scramReason ? scramReason.split(' ').slice(0, 4).join(' ') + '...' : '—'}
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-blue-950/40 border border-blue-700/30 rounded-lg p-3">
+            <p className="text-blue-400 text-xs font-bold mb-2">Lección principal</p>
+            <p className="text-blue-100 text-xs leading-relaxed italic">"{lesson}"</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── APLICACIÓN PRINCIPAL ──────────────────────────────────────────────────────
 export default function App() {
   const simulatorRef = useRef(new ReactorSimulator());
   const scoringRef = useRef(new ScoringSystem());
   const difficultyRef = useRef(new DifficultyManager(1));
+  const errorDetectorRef = useRef(new ErrorDetector());
 
   const [state, setState] = useState(simulatorRef.current.getState());
   const [scoring, setScoring] = useState(scoringRef.current.getState());
   const [isRunning, setIsRunning] = useState(false);
+  const [errorQueue, setErrorQueue] = useState([]);
   const [history, setHistory] = useState([]);
   const [scenario, setScenario] = useState('normal');
   const [showAchievements, setShowAchievements] = useState(false);
@@ -242,11 +366,30 @@ export default function App() {
   const [scramReason, setScramReason] = useState('');
   const scramModalShownRef = useRef(false);
 
+  // Post-SCRAM recovery state
+  const SCRAM_COOLDOWN_SECONDS = 120; // 2 real minutes = "120 minutes" educational
+  const scramWallTimeRef = useRef(null);
+  const [postScramCountdown, setPostScramCountdown] = useState(SCRAM_COOLDOWN_SECONDS);
+  const [investigationSteps, setInvestigationSteps] = useState({
+    step1_cause: false,
+    step2_systems: false,
+    step3_logs: false,
+    step4_approved: false,
+  });
+  const countdownTimerRef = useRef(null);
+
   const [showEducation, setShowEducation] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
   // Alerta de evento aleatorio — la dismisseamos manualmente
   const [dismissedAlertTime, setDismissedAlertTime] = useState(-999);
+
+  // Tracking última acción para RiskTooltips
+  const [lastAction, setLastAction] = useState(null);
+  const lastOpCountRef = useRef(0);
+
+  // Hint contextual para controles avanzados
+  const [activeHint, setActiveHint] = useState(null);
 
   // Simulación principal
   useEffect(() => {
@@ -263,6 +406,24 @@ export default function App() {
       sim.step(Math.min(deltaTime, 0.1));
       const newState = sim.getState();
       setState(newState);
+
+      // Detectar nueva acción para RiskTooltips
+      const opLog = newState.operationLog ?? [];
+      if (opLog.length > lastOpCountRef.current) {
+        const newest = opLog[opLog.length - 1];
+        if (newest && newest.action !== 'STARTUP') {
+          setLastAction({ ...newest, simTime: newState.time.toFixed(1) });
+        }
+        lastOpCountRef.current = opLog.length;
+      }
+
+      // Error detection — fires at most once per condition episode
+      const detected = errorDetectorRef.current.update(newState, newState.time);
+      if (detected) {
+        setErrorQueue(prev =>
+          prev.some(e => e.type === detected.type) ? prev : [...prev, detected]
+        );
+      }
 
       lastScoringUpdateRef.current += deltaTime;
       if (lastScoringUpdateRef.current >= 0.1) {
@@ -365,6 +526,39 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [tutorialMode, tutorialStep, completedSteps]);
 
+  // Post-SCRAM countdown: start when SCRAM detected, stop when cleared
+  useEffect(() => {
+    if (state.emergencyShutdown) {
+      if (!scramWallTimeRef.current) {
+        scramWallTimeRef.current = Date.now();
+        setPostScramCountdown(SCRAM_COOLDOWN_SECONDS);
+      }
+      // Start interval if not already running
+      if (!countdownTimerRef.current) {
+        countdownTimerRef.current = setInterval(() => {
+          const elapsed = (Date.now() - scramWallTimeRef.current) / 1000;
+          const remaining = Math.max(0, SCRAM_COOLDOWN_SECONDS - elapsed);
+          setPostScramCountdown(remaining);
+        }, 500);
+      }
+    } else {
+      // SCRAM cleared: reset everything
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+      scramWallTimeRef.current = null;
+      setPostScramCountdown(SCRAM_COOLDOWN_SECONDS);
+      setInvestigationSteps({ step1_cause: false, step2_systems: false, step3_logs: false, step4_approved: false });
+    }
+    return () => {
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+    };
+  }, [state.emergencyShutdown]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Sonido de alerta crítica
   const lastAlertSoundRef = useRef(0);
   useEffect(() => {
@@ -406,6 +600,7 @@ export default function App() {
     simulatorRef.current = new ReactorSimulator();
     scoringRef.current = new ScoringSystem();
     difficultyRef.current = new DifficultyManager(1);
+    errorDetectorRef.current.reset();
     setState(simulatorRef.current.getState());
     setScoring(scoringRef.current.getState());
     setHistory([]);
@@ -416,6 +611,7 @@ export default function App() {
     lastTimeRef.current = Date.now();
     lastScoringUpdateRef.current = 0;
     setDismissedAlertTime(-999);
+    setErrorQueue([]);
   };
 
   const handleStartTutorial = () => {
@@ -430,6 +626,7 @@ export default function App() {
     simulatorRef.current = new ReactorSimulator();
     scoringRef.current = new ScoringSystem();
     difficultyRef.current = new DifficultyManager(1);
+    errorDetectorRef.current.reset();
     setState(simulatorRef.current.getState());
     setScoring(scoringRef.current.getState());
     setHistory([]);
@@ -438,6 +635,7 @@ export default function App() {
     setIsRunning(false);
     lastTimeRef.current = Date.now();
     lastScoringUpdateRef.current = 0;
+    setErrorQueue([]);
   };
 
   const handleFreeMode = () => {
@@ -473,10 +671,29 @@ export default function App() {
     setTutorialStep(5);
   };
 
+  const handleAcknowledgeError = () => setErrorQueue(prev => prev.slice(1));
+  const handleSkipError = () => setErrorQueue(prev => prev.slice(1));
+
   const handleScramClose = () => setShowScramModal(false);
   const handleScramRetry = () => reset();
   const handleScramTutorial = () => handleStartTutorial();
   const handleScramRecover = () => {
+    simulatorRef.current.resetFromScram();
+    setState(simulatorRef.current.getState());
+    setShowScramModal(false);
+    scramModalShownRef.current = false;
+  };
+
+  const handleCompleteInvestigationStep = (stepId) => {
+    setInvestigationSteps(prev => ({ ...prev, [stepId]: true }));
+  };
+
+  const handlePostScramRestart = () => {
+    // Only allow if all conditions met
+    const tempOk = state.temperature < 350;
+    const timerDone = postScramCountdown <= 0;
+    const invDone = isInvestigationComplete(investigationSteps);
+    if (!tempOk || !timerDone || !invDone) return;
     simulatorRef.current.resetFromScram();
     setState(simulatorRef.current.getState());
     setShowScramModal(false);
@@ -503,6 +720,7 @@ export default function App() {
       difficultyRef.current = new DifficultyManager(1);
     }
 
+    errorDetectorRef.current.reset();
     setScenario(scenarioName);
     setState(simulatorRef.current.getState());
     setScoring(scoringRef.current.getState());
@@ -513,6 +731,7 @@ export default function App() {
     lastTimeRef.current = Date.now();
     lastScoringUpdateRef.current = 0;
     setDismissedAlertTime(-999);
+    setErrorQueue([]);
   };
 
   const sim = simulatorRef.current;
@@ -555,6 +774,15 @@ export default function App() {
         />
       )}
 
+      {errorQueue.length > 0 && !showScramModal && (
+        <ErrorFeedback
+          error={errorQueue[0]}
+          queueLength={errorQueue.length}
+          onAcknowledge={handleAcknowledgeError}
+          onSkip={handleSkipError}
+        />
+      )}
+
       {state.emergencyShutdown && (
         <div
           className="fixed inset-0 pointer-events-none z-40 alarm-red"
@@ -571,7 +799,7 @@ export default function App() {
                 <Radio className="w-10 h-10 text-yellow-500 reactor-core" />
                 Nuclear Simulator
               </h1>
-              <p className="text-slate-400 text-sm">Educativo — Física realista v2.2 · Realismo Profundo</p>
+              <p className="text-slate-400 text-sm">Educativo — Física realista v2.5 · Recuperación Post-SCRAM Realista</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <button
@@ -676,12 +904,18 @@ export default function App() {
           </div>
         )}
 
-        {/* EVENTO ALEATORIO */}
+        {/* EVENTO ALEATORIO — análisis educativo/compacto según modo */}
         {showRandomAlert && (
-          <RandomEventAlert
+          <EventAnalysis
+            tutorialMode={tutorialMode}
             alert={state.pendingAlert}
             onDismiss={() => setDismissedAlertTime(state.pendingAlert.timestamp)}
           />
+        )}
+
+        {/* PANEL DE RIESGO EN TIEMPO REAL */}
+        {isRunning && (
+          <RiskPanel tutorialMode={tutorialMode} state={state} />
         )}
 
         {/* INDICADOR DE PACIENCIA */}
@@ -692,6 +926,11 @@ export default function App() {
             lastActionName={state.lastActionName}
             pendingChanges={state.pendingChanges ?? []}
           />
+        )}
+
+        {/* TIMELINE DE CASCADA (tutorial only) */}
+        {tutorialMode && isRunning && (
+          <CascadeTimeline state={state} />
         )}
 
         {/* TUTORIAL */}
@@ -731,6 +970,16 @@ export default function App() {
           tutorialMode={tutorialMode}
           tutorialStep={tutorialStep}
           onStateChange={handleStateChange}
+        />
+
+        {/* CONTROLES AVANZADOS (siempre visibles — interactivos en libre, visualización en tutorial) */}
+        <AdvancedControls
+          sim={sim}
+          state={state}
+          tutorialMode={tutorialMode}
+          isRunning={isRunning}
+          onStateChange={handleStateChange}
+          onControlChange={(hint) => setActiveHint(hint)}
         />
 
         {/* INSTRUMENTOS DEL REACTOR */}
@@ -848,6 +1097,19 @@ export default function App() {
           </div>
         </div>
 
+        {/* RECUPERACIÓN POST-SCRAM v2.5 */}
+        {state.emergencyShutdown && (
+          <PostScramRecovery
+            tutorialMode={tutorialMode}
+            state={state}
+            countdown={postScramCountdown}
+            investigationSteps={investigationSteps}
+            onCompleteStep={handleCompleteInvestigationStep}
+            onRestart={handlePostScramRestart}
+            onReset={reset}
+          />
+        )}
+
         {/* GRÁFICAS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <PowerTemperatureChart history={history} />
@@ -913,11 +1175,37 @@ export default function App() {
 
         {/* FOOTER */}
         <div className="text-center text-slate-500 text-xs border-t border-slate-700 pt-4">
-          <p>⚛️ Nuclear Reactor Simulator v2.2 | Realismo Profundo | Educativo</p>
-          <p className="mt-2">Doppler · Zonas Térmicas · Válvula de Alivio · Demoras en Cascada · Eventos Aleatorios</p>
+          <p>⚛️ Nuclear Reactor Simulator v2.5 | Recuperación Post-SCRAM Realista | Educativo</p>
+          <p className="mt-2">Doppler · Calor de Decaimiento · Cuenta Regresiva · Investigación Post-SCRAM · Riesgo de Fusión</p>
           <p className="mt-1">GitHub: MrProphecy | Deployed on Vercel</p>
         </div>
       </div>
+
+      {/* Feedback contextual — fixed overlay, visible when reactor running */}
+      <TutorialFeedback
+        temperature={state.temperature}
+        pressure={state.pressure}
+        coolantFlow={state.coolantFlow}
+        power={state.power}
+        isRunning={isRunning}
+        dopplerActive={state.dopplerActive}
+      />
+
+      {/* Tooltip de acción — fixed overlay bottom-right */}
+      <RiskTooltips
+        tutorialMode={tutorialMode}
+        lastAction={lastAction}
+        state={state}
+      />
+
+      {/* Hint contextual de controles avanzados — fixed overlay bottom-left */}
+      {activeHint && (
+        <ContextualHints
+          activeHint={activeHint}
+          state={state}
+          onDismiss={() => setActiveHint(null)}
+        />
+      )}
     </div>
   );
 }

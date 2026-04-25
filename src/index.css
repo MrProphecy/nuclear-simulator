@@ -100,3 +100,16 @@ html, body, #root {
   box-shadow: none;
   border-color: #475569;
 }
+
+/* TutorialFeedback auto-dismiss progress bar */
+@keyframes shrink {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* TutorialFeedback slide-in */
+@keyframes slide-in-from-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+.animate-in { animation: slide-in-from-right 0.3s ease-out both; }

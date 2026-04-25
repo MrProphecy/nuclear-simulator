@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, Zap, Droplets, Gauge, Play, Pause, RotateCcw, Activity, Clock } from 'lucide-react';
 import { Tooltip } from './Tooltip';
+import { MessageImprover } from '../utils/MessageImprover';
 
 function getParamStatus(param, value) {
   if (param === 'power')       return value > 600 ? 'red' : value > 400 ? 'yellow' : 'green';
@@ -88,16 +89,7 @@ export function ControlPanel({
 
   const isStepPower = tutorialMode && tutorialStep === 5;
 
-  const alerts = [];
-  if (isRunning) {
-    if (state.power > 600)        alerts.push({ msg: `POTENCIA alta — ${state.power.toFixed(0)} MW (máx recomendado 600 MW)`,        level: 'red' });
-    if (state.temperature > 550)  alerts.push({ msg: `TEMPERATURA crítica — ${state.temperature.toFixed(0)} K (máx seguro 550 K)`,   level: 'red' });
-    else if (state.temperature > 500) alerts.push({ msg: `TEMPERATURA elevada — ${state.temperature.toFixed(0)} K (límite próximo)`, level: 'yellow' });
-    if (state.pressure > 155)     alerts.push({ msg: `PRESIÓN fuera de rango — ${state.pressure.toFixed(1)} bar (máx 155 bar)`,       level: 'red' });
-    else if (state.pressure > 150) alerts.push({ msg: `PRESIÓN elevada — ${state.pressure.toFixed(1)} bar (precaución)`,              level: 'yellow' });
-    if (state.coolantFlow < 30)   alerts.push({ msg: `FLUJO REFRIGERANTE crítico — ${state.coolantFlow.toFixed(0)}% (mínimo 30%)`,    level: 'red' });
-    if (state.reliefValveOpen)    alerts.push({ msg: 'VÁLVULA DE ALIVIO ABIERTA — liberando presión automáticamente',                   level: 'yellow' });
-  }
+  const alerts = MessageImprover.getAlerts({ state, tutorialMode, isRunning });
 
   const handleRodSlider = (e) => {
     sim.setControlRods(parseInt(e.target.value, 10));
@@ -148,25 +140,28 @@ SCRAM = todas las barras se insertan en <1 segundo.`;
 
         {/* Alertas */}
         {alerts.length > 0 && (
-          <div className="mb-3 space-y-1.5">
+          <div className="mb-3 space-y-2">
             {alerts.map((a, i) => (
               <div
                 key={i}
-                className={`text-xs font-bold px-3 py-2 rounded-lg flex items-start gap-2 ${
+                className={`text-xs px-3 py-2.5 rounded-lg border ${
                   a.level === 'red'
-                    ? 'bg-red-900/80 text-red-300 border border-red-500/60 animate-pulse'
-                    : 'bg-yellow-900/60 text-yellow-200 border border-yellow-500/50'
+                    ? 'bg-red-900/80 text-red-300 border-red-500/60 animate-pulse'
+                    : 'bg-yellow-900/60 text-yellow-200 border-yellow-500/50'
                 }`}
               >
-                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                <span>
-                  ⚠️ ADVERTENCIA: {a.msg}
-                  {a.level === 'red' && tutorialMode && (
-                    <span className="block mt-0.5 font-normal opacity-80">
-                      Esto es peligroso. Vuelve a estabilizar los controles.
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span className="font-bold">⚠️ {a.msg}</span>
+                </div>
+                {a.directive && (
+                  <div className="mt-1.5 ml-5 px-2 py-1.5 bg-black/20 rounded text-xs font-mono">
+                    <span className="text-green-300 font-semibold">▶ ACCIÓN: </span>
+                    <span className={a.level === 'red' ? 'text-red-200' : 'text-yellow-100'}>
+                      {a.directive}
                     </span>
-                  )}
-                </span>
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -1,7 +1,10 @@
 /**
- * Nuclear Reactor Physics Simulator v2.2 — Realismo Profundo
+ * Nuclear Reactor Physics Simulator v2.5 — Post-SCRAM Recovery + Decay Heat
  * Cascade delays, Doppler feedback, thermal zones, pressure relief, random events
+ * + Real-time risk calculation, decay heat simulation, meltdown risk without cooling
  */
+import { calcPowerRisk, calcTempRisk, calcPressureRisk, calcFlowRisk, calcTotalRisk, calcAlertedSystems } from './RiskCalculator';
+import { DecayHeatCalculator } from './DecayHeatCalculator';
 
 export class ReactorSimulator {
   constructor() {
@@ -65,6 +68,12 @@ export class ReactorSimulator {
     // HISTORIAL DE OPERACIONES (auditoría)
     this.operationLog = [];
 
+    // CONTROLES AVANZADOS (Modo Libre)
+    this.reliefValveManual = 0;   // 0–100% apertura manual
+    this.primaryPumpSpeed  = 100; // 50–100% velocidad bomba
+    this.auxiliaryCooling  = 0;   // 0–100% sistema auxiliar
+    this.backupPumpActive  = false;
+
     // MODOS DE FALLO
     this.failures = {
       coolantLeak: false,
@@ -73,9 +82,28 @@ export class ReactorSimulator {
       safetyDisabled: false,
     };
 
+    // RIESGO EN TIEMPO REAL
+    this.risks = { power: 0, temperature: 0, pressure: 0, flow: 0 };
+    this.totalRisk = 0;
+    this.alertedSystems = { cooling: false, relief: false, control: false, structural: false };
+    this.prediction60s = { tempChange: 0, pressureChange: 0, riskChange: 0 };
+    // Tracking de tendencias para predicción
+    this._prevTemp = 300;
+    this._prevPressure = 155;
+    this._prevRisk = 0;
+    this._trendAccum = 0;
+
+    // POST-SCRAM — calor de decaimiento y recuperación
+    this.postScramSeconds = 0;        // sim-seconds since SCRAM
+    this.residualHeat = 0;            // MW of decay heat
+    this.decayHeatStartPower = 0;     // reactor power at moment of SCRAM
+    this._meltdownWarned = false;
+    this._meltdownStarted = false;
+    this._lastMeltdownLogTime = -999;
+
     // LOG DE EVENTOS (sistema)
     this.events = [];
-    this.logEvent('Sistema iniciado — v2.2 Realismo Profundo', 'info');
+    this.logEvent('Sistema iniciado — v2.5 Recuperación Post-SCRAM', 'info');
     this.logOperation('STARTUP', {}, 'Reactor iniciado en estado seguro');
   }
 
@@ -105,6 +133,24 @@ export class ReactorSimulator {
     for (const change of due) {
       try { change.apply(); } catch (_) {}
     }
+  }
+
+  // ── SCRAM CENTRALIZADO ─────────────────────────────────────────
+
+  triggerScram(reason, logAction, logParams = {}) {
+    if (this.emergencyShutdown) return;
+    this.emergencyShutdown = true;
+    this.scramReason = reason;
+    this.controlRodsInserted = 100;
+    this.reactividad = -3;
+    // Capture power for decay heat calculation
+    this.decayHeatStartPower = this.power;
+    this.residualHeat = this.power * 0.07;
+    this.postScramSeconds = 0;
+    this._meltdownWarned = false;
+    this._meltdownStarted = false;
+    this._lastMeltdownLogTime = -999;
+    this.logOperation(logAction, { power: this.power, temperature: this.temperature, ...logParams }, reason);
   }
 
   // ── FÍSICA NUCLEAR ──────────────────────────────────────────────
@@ -137,7 +183,9 @@ export class ReactorSimulator {
     const heatGeneration = this.power * 2.5;
     const coolantTemp = 290 - this.coolantFlow * 0.3;
     const heatRemoval = Math.max(0, this.coolantFlow / 100) * (this.temperature - coolantTemp) * 0.8;
-    const dT_dt = heatGeneration - heatRemoval;
+    // Enfriamiento auxiliar: hasta -3 K/s a 100%
+    const auxCooling = (this.auxiliaryCooling / 100) * 3;
+    const dT_dt = heatGeneration - heatRemoval - auxCooling;
     this.temperature += dT_dt * dt;
     this.temperature = Math.max(280, this.temperature);
 
@@ -148,12 +196,12 @@ export class ReactorSimulator {
       this.reactividad -= 0.5;
       this.logEvent('⚠️ ALERTA: Temperatura crítica — Doppler refuerza absorción', 'warning');
       if (this.safetySystemsActive && !this.emergencyShutdown) {
-        this.scramReason = `Temperatura excedió ${this.temperatureLimit}K (límite de seguridad)`;
-        this.emergencyShutdown = true;
-        this.controlRodsInserted = 100;
-        this.reactividad = -3;
         this.logEvent('💥 SCRAM AUTOMÁTICO: Temperatura límite alcanzada', 'critical');
-        this.logOperation('SCRAM_AUTO_TEMP', { temperature: this.temperature }, 'SCRAM por temperatura');
+        this.triggerScram(
+          `Temperatura excedió ${this.temperatureLimit}K (límite de seguridad)`,
+          'SCRAM_AUTO_TEMP',
+          { temperature: this.temperature }
+        );
       }
     }
   }
@@ -173,7 +221,9 @@ export class ReactorSimulator {
   updatePressure(dt) {
     const pressureFromTemp = (this.temperature - 300) * 0.2;
     const pressureDecay = this.coolantFlow > 0 ? 0.3 : 0;
-    this.pressure = 155 + pressureFromTemp - pressureDecay;
+    // Válvula manual reduce presión hasta -5 bar al 100% de apertura
+    const manualValveRelief = (this.reliefValveManual / 100) * 5;
+    this.pressure = 155 + pressureFromTemp - pressureDecay - manualValveRelief;
 
     // Válvula de alivio (automática, pasiva)
     this.checkPressureRelief();
@@ -181,12 +231,12 @@ export class ReactorSimulator {
     if (this.pressure > this.pressureLimit && !this.reliefValveOpen) {
       this.logEvent('🔴 CRÍTICO: Presión primaria fuera de límites estructurales', 'critical');
       if (this.safetySystemsActive && !this.emergencyShutdown) {
-        this.scramReason = `Presión excedió ${this.pressureLimit} bar (límite estructural)`;
-        this.emergencyShutdown = true;
-        this.controlRodsInserted = 100;
-        this.reactividad = -3;
-        this.logEvent('💥 SCRAM AUTOMÁTICO activado', 'critical');
-        this.logOperation('SCRAM_AUTO_PRESS', { pressure: this.pressure }, 'SCRAM por presión');
+        this.logEvent('💥 SCRAM AUTOMÁTICO activado por presión', 'critical');
+        this.triggerScram(
+          `Presión excedió ${this.pressureLimit} bar (límite estructural)`,
+          'SCRAM_AUTO_PRESS',
+          { pressure: this.pressure }
+        );
       }
     }
   }
@@ -367,13 +417,8 @@ export class ReactorSimulator {
   }
 
   emergencyScram() {
-    const prev = { power: this.power, temperature: this.temperature, pressure: this.pressure };
-    this.controlRodsInserted = 100;
-    this.reactividad = -3;
-    this.emergencyShutdown = true;
-    this.scramReason = 'Activaste manualmente SCRAM';
     this.logEvent('🛑 SCRAM DE EMERGENCIA ACTIVADO', 'critical');
-    this.logOperation('SCRAM_MANUAL', prev, 'Operador activó SCRAM de emergencia');
+    this.triggerScram('Activaste manualmente SCRAM', 'SCRAM_MANUAL', {});
   }
 
   resetFromScram() {
@@ -382,10 +427,61 @@ export class ReactorSimulator {
     this.reactividad = -1.5;
     this.power = 1;
     this.scramReason = null;
-    this.pendingChanges = []; // limpiar cola de demoras
+    this.pendingChanges = [];
     this.isStabilizing = false;
+    // Decay heat reset
+    this.postScramSeconds = 0;
+    this.residualHeat = 0;
+    this.decayHeatStartPower = 0;
+    this._meltdownWarned = false;
+    this._meltdownStarted = false;
+    this._lastMeltdownLogTime = -999;
+    // Reset controles de emergencia
+    this.reliefValveManual = 0;
+    this.auxiliaryCooling  = 0;
     this.logEvent('⚛️ Reactor recuperado de SCRAM — en standby', 'warning');
     this.logOperation('RECUPERAR_SCRAM', {}, 'Recuperación manual de emergencia');
+  }
+
+  // ── CONTROLES AVANZADOS (Modo Libre) ───────────────────────────
+
+  setReliefValveManual(value) {
+    const prev = this.reliefValveManual;
+    this.reliefValveManual = Math.max(0, Math.min(100, value));
+    if (this.reliefValveManual > 0 && prev === 0) {
+      this.logEvent(`🔧 Válvula de alivio manual: ${this.reliefValveManual.toFixed(0)}% abierta`, 'info');
+      this.logOperation('VALVULA_MANUAL_OPEN', { value: this.reliefValveManual }, 'Abrir válvula de alivio manual');
+    } else if (this.reliefValveManual === 0 && prev > 0) {
+      this.logEvent('🔧 Válvula de alivio manual cerrada', 'info');
+    }
+  }
+
+  setPrimaryPumpSpeed(value) {
+    this.primaryPumpSpeed = Math.max(50, Math.min(100, value));
+    this.startStabilizationTracking('BOMBA_VELOCIDAD');
+  }
+
+  setAuxiliaryCooling(value) {
+    const prev = this.auxiliaryCooling;
+    this.auxiliaryCooling = Math.max(0, Math.min(100, value));
+    if (this.auxiliaryCooling > 0 && prev === 0) {
+      this.logEvent(`❄️ Enfriamiento auxiliar activado: ${this.auxiliaryCooling.toFixed(0)}%`, 'warning');
+      this.logOperation('ENFRIAMIENTO_AUX_ON', { value: this.auxiliaryCooling }, 'Activar enfriamiento auxiliar de emergencia');
+    } else if (this.auxiliaryCooling === 0 && prev > 0) {
+      this.logEvent('❄️ Enfriamiento auxiliar desactivado', 'info');
+    }
+  }
+
+  toggleBackupPump() {
+    this.backupPumpActive = !this.backupPumpActive;
+    if (this.backupPumpActive) {
+      this.logEvent('✓ Bomba de respaldo ACTIVADA — flujo +20%', 'info');
+      this.logOperation('BOMBA_RESPALDO_ON', { coolantFlow: this.coolantFlow }, 'Activar bomba de respaldo');
+    } else {
+      this.logEvent('Bomba de respaldo desactivada', 'info');
+      this.logOperation('BOMBA_RESPALDO_OFF', {}, 'Desactivar bomba de respaldo');
+    }
+    this.startStabilizationTracking('BOMBA_RESPALDO');
   }
 
   // ── PACIENCIA / ESTABILIZACIÓN ──────────────────────────────────
@@ -423,6 +519,36 @@ export class ReactorSimulator {
     }
   }
 
+  // ── RIESGO EN TIEMPO REAL ────────────────────────────────────────
+
+  calculateRisks(dt) {
+    const powerRisk = calcPowerRisk(this.power);
+    const tempRisk  = calcTempRisk(this.temperature);
+    const pressRisk = calcPressureRisk(this.pressure);
+    const flowRisk  = calcFlowRisk(this.coolantFlow);
+
+    this.risks = { power: powerRisk, temperature: tempRisk, pressure: pressRisk, flow: flowRisk };
+    this.totalRisk = calcTotalRisk(this.risks);
+    this.alertedSystems = calcAlertedSystems(this, this.risks);
+
+    // Predicción: tasa de cambio acumulada cada segundo
+    this._trendAccum += dt;
+    if (this._trendAccum >= 1.0) {
+      const tempRate  = (this.temperature - this._prevTemp)     / this._trendAccum;
+      const pressRate = (this.pressure    - this._prevPressure) / this._trendAccum;
+      const riskRate  = (this.totalRisk   - this._prevRisk)     / this._trendAccum;
+      this.prediction60s = {
+        tempChange:     tempRate  * 60,
+        pressureChange: pressRate * 60,
+        riskChange:     riskRate  * 60,
+      };
+      this._prevTemp     = this.temperature;
+      this._prevPressure = this.pressure;
+      this._prevRisk     = this.totalRisk;
+      this._trendAccum   = 0;
+    }
+  }
+
   // ── PASO DE SIMULACIÓN PRINCIPAL ─────────────────────────────────
 
   step(dt = 0.1) {
@@ -438,10 +564,46 @@ export class ReactorSimulator {
     }
 
     if (this.emergencyShutdown) {
-      this.power *= Math.exp(-0.5 * dt);
-      this.temperature = Math.max(290, this.temperature - 10 * dt);
-      this.pressure = Math.max(100, this.pressure - 5 * dt);
+      // Power drops to near-zero rapidly (neutron chain reaction stopped)
+      this.power = Math.max(0, this.power * Math.exp(-0.5 * dt));
+
+      // Track post-SCRAM time for decay heat calculation
+      this.postScramSeconds += dt;
+
+      // Wigner-Way decay heat calculation
+      if (this.decayHeatStartPower > 0) {
+        this.residualHeat = DecayHeatCalculator.calculateDecayHeat(
+          this.postScramSeconds,
+          this.decayHeatStartPower
+        );
+      }
+
+      // Temperature: depends on whether cooling is active
+      if (this.coolantFlow >= 30) {
+        // Active cooling: temperature drops toward ambient
+        const coolingStrength = DecayHeatCalculator.coolingRate(this.coolantFlow);
+        this.temperature = Math.max(290, this.temperature - coolingStrength * dt);
+      } else {
+        // No cooling: residual heat warms the fuel back up
+        const heatingStrength = DecayHeatCalculator.heatingRate(this.residualHeat);
+        this.temperature = Math.min(3000, this.temperature + heatingStrength * dt);
+
+        // Log meltdown warnings (rate-limited)
+        if (this.temperature > 800 && this.time - this._lastMeltdownLogTime > 20) {
+          this._lastMeltdownLogTime = this.time;
+          if (this.temperature < 1500) {
+            this.logEvent('🔴 CRÍTICO: Sin refrigeración — combustible calentándose', 'critical');
+          } else if (this.temperature < 2500) {
+            this.logEvent('💣 FUSIÓN DE COMBUSTIBLE EN PROGRESO — INTERVENCIÓN INMEDIATA', 'critical');
+          } else {
+            this.logEvent('💥 MELTDOWN COMPLETO — CATÁSTROFE NUCLEAR', 'critical');
+          }
+        }
+      }
+
+      this.pressure = Math.max(95, this.pressure - 3 * dt);
       this.updateThermalZones();
+      this.calculateRisks(dt);
       return;
     }
 
@@ -453,18 +615,30 @@ export class ReactorSimulator {
     if (!this.pumpRunning) {
       this.coolantFlow = Math.max(0, this.coolantFlow - 5 * dt);
     } else if (!this.failures.coolantLeak && !this.failures.pumpFailure) {
-      // Recuperación gradual si la bomba está encendida (no inmediata)
-      this.coolantFlow = Math.min(100, this.coolantFlow + 3 * dt);
+      // Flujo objetivo basado en velocidad de bomba, válvula manual y bomba de respaldo
+      const pumpTarget    = this.primaryPumpSpeed;                       // 50–100%
+      const reliefDrain   = (this.reliefValveManual / 100) * 30;         // válvula abierta reduce flujo max -30%
+      const autoValveDrain = this.reliefValveOpen ? 5 : 0;               // válvula auto abierta: -5%
+      const backupBoost   = this.backupPumpActive ? 20 : 0;              // bomba respaldo: +20%
+      const targetFlow    = Math.min(120, Math.max(0,
+        pumpTarget - reliefDrain - autoValveDrain + backupBoost
+      ));
+
+      if (this.coolantFlow < targetFlow) {
+        this.coolantFlow = Math.min(targetFlow, this.coolantFlow + 3 * dt);
+      } else if (this.coolantFlow > targetFlow) {
+        this.coolantFlow = Math.max(targetFlow, this.coolantFlow - 3 * dt);
+      }
     }
 
     // SCRAM automático por flujo de refrigerante crítico
     if (this.coolantFlow < 30 && this.safetySystemsActive && !this.emergencyShutdown) {
-      this.scramReason = 'Flujo de refrigerante cayó por debajo de 30%';
-      this.emergencyShutdown = true;
-      this.controlRodsInserted = 100;
-      this.reactividad = -3;
       this.logEvent('💥 SCRAM AUTOMÁTICO: Flujo refrigerante crítico', 'critical');
-      this.logOperation('SCRAM_AUTO_FLOW', { coolantFlow: this.coolantFlow }, 'SCRAM por flujo crítico');
+      this.triggerScram(
+        'Flujo de refrigerante cayó por debajo de 30%',
+        'SCRAM_AUTO_FLOW',
+        { coolantFlow: this.coolantFlow }
+      );
     }
 
     // Física principal
@@ -475,6 +649,9 @@ export class ReactorSimulator {
 
     // Eventos aleatorios
     this.generateRandomEvent();
+
+    // Riesgo en tiempo real
+    this.calculateRisks(dt);
 
     // Progreso de estabilización (indicador de paciencia)
     this.updateStabilizationProgress();
@@ -528,6 +705,20 @@ export class ReactorSimulator {
       lastActionName: this.lastActionName,
       pendingAlert: this.pendingAlert,
       operationLog: this.operationLog,
+      // v2.3 — riesgo en tiempo real
+      risks: this.risks,
+      totalRisk: this.totalRisk,
+      alertedSystems: this.alertedSystems,
+      prediction60s: this.prediction60s,
+      // v2.4 — controles avanzados
+      reliefValveManual: this.reliefValveManual,
+      primaryPumpSpeed: this.primaryPumpSpeed,
+      auxiliaryCooling: this.auxiliaryCooling,
+      backupPumpActive: this.backupPumpActive,
+      // v2.5 — post-SCRAM decay heat
+      postScramSeconds: this.postScramSeconds,
+      residualHeat: this.residualHeat,
+      decayHeatStartPower: this.decayHeatStartPower,
     };
   }
 
