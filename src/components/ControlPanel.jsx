@@ -1,48 +1,19 @@
 import React from 'react';
-import { AlertTriangle, Zap, Droplets, Gauge, Play, Pause, RotateCcw, Activity } from 'lucide-react';
+import { AlertTriangle, Zap, Droplets, Gauge, Play, Pause, RotateCcw, Activity, Clock } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
 function getParamStatus(param, value) {
-  if (param === 'power') {
-    if (value > 600) return 'red';
-    if (value > 400) return 'yellow';
-    return 'green';
-  }
-  if (param === 'temperature') {
-    if (value > 550) return 'red';
-    if (value > 500) return 'yellow';
-    return 'green';
-  }
-  if (param === 'pressure') {
-    if (value > 155) return 'red';
-    if (value > 150) return 'yellow';
-    return 'green';
-  }
-  if (param === 'coolantFlow') {
-    return value < 30 ? 'red' : 'green';
-  }
+  if (param === 'power')       return value > 600 ? 'red' : value > 400 ? 'yellow' : 'green';
+  if (param === 'temperature') return value > 550 ? 'red' : value > 500 ? 'yellow' : 'green';
+  if (param === 'pressure')    return value > 155 ? 'red' : value > 150 ? 'yellow' : 'green';
+  if (param === 'coolantFlow') return value < 30 ? 'red' : 'green';
   return 'green';
 }
 
 const STATUS_COLORS = {
-  red: {
-    bg: 'bg-red-950/60',
-    border: 'border-red-600/60',
-    text: 'text-red-400',
-    bar: 'bg-red-500',
-  },
-  yellow: {
-    bg: 'bg-yellow-950/40',
-    border: 'border-yellow-600/50',
-    text: 'text-yellow-300',
-    bar: 'bg-yellow-400',
-  },
-  green: {
-    bg: 'bg-slate-800/70',
-    border: 'border-slate-600/30',
-    text: 'text-green-400',
-    bar: 'bg-green-500',
-  },
+  red:    { bg: 'bg-red-950/60',    border: 'border-red-600/60',    text: 'text-red-400',    bar: 'bg-red-500' },
+  yellow: { bg: 'bg-yellow-950/40', border: 'border-yellow-600/50', text: 'text-yellow-300', bar: 'bg-yellow-400' },
+  green:  { bg: 'bg-slate-800/70',  border: 'border-slate-600/30',  text: 'text-green-400',  bar: 'bg-green-500' },
 };
 
 function ParamBar({ label, value, unit, maxDisplay, param, tooltip, decimals = 1 }) {
@@ -61,13 +32,47 @@ function ParamBar({ label, value, unit, maxDisplay, param, tooltip, decimals = 1
           </span>
         </div>
         <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-          <div
-            className={`h-2 rounded-full transition-all duration-300 ${c.bar}`}
-            style={{ width: `${pct}%` }}
-          />
+          <div className={`h-2 rounded-full transition-all duration-300 ${c.bar}`} style={{ width: `${pct}%` }} />
         </div>
       </div>
     </Tooltip>
+  );
+}
+
+// Banner de demora en cascada — aparece cuando hay cambios en cola
+function CascadeDelayBanner({ pendingChanges }) {
+  if (!pendingChanges || pendingChanges.length === 0) return null;
+  return (
+    <div className="mb-3 bg-blue-950/60 border border-blue-500/40 rounded-lg px-3 py-2.5">
+      <div className="flex items-center gap-2 mb-2">
+        <Clock className="w-3.5 h-3.5 text-blue-400" />
+        <span className="text-blue-300 text-xs font-bold uppercase tracking-wide">
+          Demoras en Cascada — {pendingChanges.length} cambio{pendingChanges.length > 1 ? 's' : ''} en cola
+        </span>
+      </div>
+      <div className="space-y-1">
+        {pendingChanges.map((c, i) => {
+          const pct = Math.max(0, Math.min(100, 100 - (parseFloat(c.remainingSeconds) / (c.triggerTime - c.scheduledAt)) * 100));
+          return (
+            <div key={i} className="flex items-center gap-2">
+              <span className="text-yellow-300 font-mono text-xs font-bold w-10 flex-shrink-0">
+                {c.remainingSeconds}s
+              </span>
+              <div className="flex-1 bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="h-1.5 rounded-full bg-blue-400 transition-all duration-300"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <span className="text-slate-400 text-xs truncate max-w-32">{c.description}</span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-xs text-blue-400/70 mt-2">
+        La física no puede acelerarse. Los cambios se aplicarán progresivamente.
+      </p>
+    </div>
   );
 }
 
@@ -85,22 +90,13 @@ export function ControlPanel({
 
   const alerts = [];
   if (isRunning) {
-    if (state.power > 600) {
-      alerts.push({ msg: `POTENCIA alta — ${state.power.toFixed(0)} MW (máx recomendado 600 MW)`, level: 'red' });
-    }
-    if (state.temperature > 550) {
-      alerts.push({ msg: `TEMPERATURA crítica — ${state.temperature.toFixed(0)} K (máx seguro 550 K)`, level: 'red' });
-    } else if (state.temperature > 500) {
-      alerts.push({ msg: `TEMPERATURA elevada — ${state.temperature.toFixed(0)} K (límite de 550 K próximo)`, level: 'yellow' });
-    }
-    if (state.pressure > 155) {
-      alerts.push({ msg: `PRESIÓN fuera de rango — ${state.pressure.toFixed(1)} bar (máx seguro 155 bar)`, level: 'red' });
-    } else if (state.pressure > 150) {
-      alerts.push({ msg: `PRESIÓN elevada — ${state.pressure.toFixed(1)} bar (zona de precaución)`, level: 'yellow' });
-    }
-    if (state.coolantFlow < 30) {
-      alerts.push({ msg: `FLUJO REFRIGERANTE crítico — ${state.coolantFlow.toFixed(0)}% (mínimo seguro 30%)`, level: 'red' });
-    }
+    if (state.power > 600)        alerts.push({ msg: `POTENCIA alta — ${state.power.toFixed(0)} MW (máx recomendado 600 MW)`,        level: 'red' });
+    if (state.temperature > 550)  alerts.push({ msg: `TEMPERATURA crítica — ${state.temperature.toFixed(0)} K (máx seguro 550 K)`,   level: 'red' });
+    else if (state.temperature > 500) alerts.push({ msg: `TEMPERATURA elevada — ${state.temperature.toFixed(0)} K (límite próximo)`, level: 'yellow' });
+    if (state.pressure > 155)     alerts.push({ msg: `PRESIÓN fuera de rango — ${state.pressure.toFixed(1)} bar (máx 155 bar)`,       level: 'red' });
+    else if (state.pressure > 150) alerts.push({ msg: `PRESIÓN elevada — ${state.pressure.toFixed(1)} bar (precaución)`,              level: 'yellow' });
+    if (state.coolantFlow < 30)   alerts.push({ msg: `FLUJO REFRIGERANTE crítico — ${state.coolantFlow.toFixed(0)}% (mínimo 30%)`,    level: 'red' });
+    if (state.reliefValveOpen)    alerts.push({ msg: 'VÁLVULA DE ALIVIO ABIERTA — liberando presión automáticamente',                   level: 'yellow' });
   }
 
   const handleRodSlider = (e) => {
@@ -110,12 +106,36 @@ export function ControlPanel({
 
   const sliderDisabled = sim.failures.controlRodsStuck || sim.emergencyShutdown;
 
+  const barrasTooltipRetiro = `⏱️ DEMORA OPERACIONAL — Retirada de Barras
+
+La reactividad aumentará en ~3 segundos.
+La potencia comenzará a subir en ~8 segundos.
+La estabilización completa toma ~60 segundos.
+
+¿POR QUÉ ESPERAR?
+• En una central REAL, los cambios son lentos
+• Los neutrones tardan en multiplicarse
+• El agua tarda en calentarse
+• El operador MONITOREA constantemente
+
+Los turnos nucleares duran 12–24 horas.
+Paciencia y atención = Seguridad.`;
+
+  const barrasTooltipInsercion = `⏱️ DEMORA OPERACIONAL — Inserción de Barras
+
+Las barras absorberán neutrones en ~3 segundos.
+La potencia comenzará a bajar en ~8 segundos.
+La estabilización completa toma ~60 segundos.
+
+SAFETY FACT:
+La inserción de barras es el mecanismo de seguridad
+más fundamental de cualquier reactor nuclear.
+SCRAM = todas las barras se insertan en <1 segundo.`;
+
   return (
     <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
 
-      {/* ══════════════════════════════════════
-          PANEL DE ESTADO EN VIVO
-      ══════════════════════════════════════ */}
+      {/* ══ PANEL DE ESTADO EN VIVO ══ */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-3">
           <Activity className="w-4 h-4 text-green-400" />
@@ -126,7 +146,7 @@ export function ControlPanel({
           </span>
         </div>
 
-        {/* Alert banners */}
+        {/* Alertas */}
         {alerts.length > 0 && (
           <div className="mb-3 space-y-1.5">
             {alerts.map((a, i) => (
@@ -152,48 +172,23 @@ export function ControlPanel({
           </div>
         )}
 
-        {/* Parameter grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
-          <ParamBar
-            label="Potencia"
-            value={state.power}
-            unit="MW"
-            maxDisplay={1000}
-            param="power"
-            decimals={0}
-            tooltip="Potencia: Energía generada en Megavatios. Normal: 500–800 MW. Rojo > 600 MW"
-          />
-          <ParamBar
-            label="Temperatura"
-            value={state.temperature}
-            unit="K"
-            maxDisplay={700}
-            param="temperature"
-            decimals={0}
-            tooltip="Temperatura: Calor del núcleo en Kelvin. Máximo seguro: 550K. Si supera 600K → SCRAM automático"
-          />
-          <ParamBar
-            label="Presión"
-            value={state.pressure}
-            unit="bar"
-            maxDisplay={170}
-            param="pressure"
-            decimals={1}
-            tooltip="Presión: Estrés del circuito primario. Máximo: 160 bar. SCRAM automático al exceder ese límite"
-          />
+        {/* Demoras en cascada */}
+        <CascadeDelayBanner pendingChanges={state.pendingChanges} />
 
-          {/* Coolant flow — custom because threshold is inverted */}
-          <Tooltip
-            text="Flujo Refrigerante: Circulación de agua. Mínimo: 30%. Por debajo → SCRAM automático"
-            position="bottom"
-          >
-            <div
-              className={`rounded-lg px-3 py-2.5 border cursor-help transition-colors duration-500 ${
-                state.coolantFlow < 30
-                  ? 'bg-red-950/60 border-red-600/60'
-                  : 'bg-slate-800/70 border-slate-600/30'
-              }`}
-            >
+        {/* Parámetros */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
+          <ParamBar label="Potencia" value={state.power} unit="MW" maxDisplay={1000} param="power" decimals={0}
+            tooltip="Potencia: Energía generada en MW. Normal: 500–800 MW. Rojo > 600 MW" />
+          <ParamBar label="Temperatura" value={state.temperature} unit="K" maxDisplay={700} param="temperature" decimals={0}
+            tooltip="Temperatura: Calor del núcleo en Kelvin. Máximo seguro: 550K → SCRAM automático a 600K" />
+          <ParamBar label="Presión" value={state.pressure} unit="bar" maxDisplay={170} param="pressure" decimals={1}
+            tooltip="Presión: Estrés del circuito primario. Válvula alivio: 155 bar. Máximo estructural: 160 bar" />
+
+          {/* Flujo refrigerante */}
+          <Tooltip text="Flujo Refrigerante: Circulación de agua. Mínimo: 30%. Por debajo → SCRAM automático" position="bottom">
+            <div className={`rounded-lg px-3 py-2.5 border cursor-help transition-colors duration-500 ${
+              state.coolantFlow < 30 ? 'bg-red-950/60 border-red-600/60' : 'bg-slate-800/70 border-slate-600/30'
+            }`}>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-slate-400 text-xs font-semibold uppercase tracking-wide">Flujo Refrigerante</span>
                 <span className={`text-base font-bold tabular-nums ${state.coolantFlow < 30 ? 'text-red-400' : 'text-green-400'}`}>
@@ -201,26 +196,17 @@ export function ControlPanel({
                 </span>
               </div>
               <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-2 rounded-full transition-all duration-300 ${state.coolantFlow < 30 ? 'bg-red-500' : 'bg-green-500'}`}
-                  style={{ width: `${Math.min(100, state.coolantFlow)}%` }}
-                />
+                <div className={`h-2 rounded-full transition-all duration-300 ${state.coolantFlow < 30 ? 'bg-red-500' : 'bg-green-500'}`}
+                  style={{ width: `${Math.min(100, state.coolantFlow)}%` }} />
               </div>
             </div>
           </Tooltip>
 
-          {/* Pump status */}
-          <Tooltip
-            text="Estado Bomba: Circula agua para enfriar. ON=esencial durante operación. Sin bomba el núcleo sobrecalienta en segundos"
-            position="bottom"
-          >
-            <div
-              className={`rounded-lg px-3 py-2.5 border cursor-help transition-colors duration-500 ${
-                state.pumpRunning
-                  ? 'bg-green-950/30 border-green-600/40'
-                  : 'bg-red-950/60 border-red-600/60'
-              }`}
-            >
+          {/* Estado bomba */}
+          <Tooltip text="Estado Bomba: Circula agua para enfriar. Sin bomba → temperatura sube en segundos. Arranque: 5 segundos." position="bottom">
+            <div className={`rounded-lg px-3 py-2.5 border cursor-help transition-colors duration-500 ${
+              state.pumpRunning ? 'bg-green-950/30 border-green-600/40' : 'bg-red-950/60 border-red-600/60'
+            }`}>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-slate-400 text-xs font-semibold uppercase tracking-wide">Estado Bomba</span>
                 <span className={`text-base font-bold ${state.pumpRunning ? 'text-green-400' : 'text-red-400 animate-pulse'}`}>
@@ -228,19 +214,14 @@ export function ControlPanel({
                 </span>
               </div>
               <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-2 rounded-full transition-all duration-500 ${state.pumpRunning ? 'bg-green-500' : 'bg-red-500'}`}
-                  style={{ width: state.pumpRunning ? '100%' : '0%' }}
-                />
+                <div className={`h-2 rounded-full transition-all duration-500 ${state.pumpRunning ? 'bg-green-500' : 'bg-red-500'}`}
+                  style={{ width: state.pumpRunning ? '100%' : '0%' }} />
               </div>
             </div>
           </Tooltip>
 
-          {/* Control rods % */}
-          <Tooltip
-            text="Barras de Control: Varillas de boro. 0%=máx reacción, 100%=mín reacción"
-            position="bottom"
-          >
+          {/* Barras % */}
+          <Tooltip text="Barras de Control: Varillas de boro. 0%=máx reacción, 100%=mín reacción. Inserción/retirada: efecto en 3s." position="bottom">
             <div className="rounded-lg px-3 py-2.5 border bg-cyan-950/30 border-cyan-700/40 cursor-help">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-slate-400 text-xs font-semibold uppercase tracking-wide">% Barras Control</span>
@@ -249,16 +230,14 @@ export function ControlPanel({
                 </span>
               </div>
               <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-2 rounded-full bg-cyan-500 transition-all duration-300"
-                  style={{ width: `${state.controlRodsInserted}%` }}
-                />
+                <div className="h-2 rounded-full bg-cyan-500 transition-all duration-300"
+                  style={{ width: `${state.controlRodsInserted}%` }} />
               </div>
             </div>
           </Tooltip>
         </div>
 
-        {/* ── SLIDER DE BARRAS DE CONTROL ── */}
+        {/* SLIDER DE BARRAS */}
         <div
           id="control-rods-slider"
           className={`rounded-xl p-4 border transition-all duration-300 ${
@@ -276,7 +255,7 @@ export function ControlPanel({
           )}
 
           <div className="flex items-center justify-between mb-2">
-            <Tooltip text="Barras de Control: Varillas de boro que absorben neutrones. Más % = menos reacción = menos potencia">
+            <Tooltip text="Barras de Control: slider continuo — efecto inmediato. Botones BARRAS+/- tienen demora de 3 segundos (más realista).">
               <span className="text-cyan-300 text-sm font-bold cursor-help">
                 Barras de Control: {state.controlRodsInserted.toFixed(0)}%
               </span>
@@ -285,10 +264,7 @@ export function ControlPanel({
           </div>
 
           <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
+            type="range" min="0" max="100" step="1"
             value={Math.round(state.controlRodsInserted)}
             onChange={handleRodSlider}
             disabled={sliderDisabled}
@@ -309,16 +285,13 @@ export function ControlPanel({
         </div>
       </div>
 
-      {/* ══════════════════════════════════════
-          CONTROLES DEL OPERADOR
-      ══════════════════════════════════════ */}
+      {/* ══ CONTROLES DEL OPERADOR ══ */}
       <div className="mb-6">
         <h3 className="text-lg font-bold text-white mb-4">CONTROLES DEL OPERADOR</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 
           <Tooltip text={isRunning ? 'Pausa la simulación del reactor' : 'Inicia la simulación del reactor nuclear'}>
-            <button
-              onClick={onToggle}
+            <button onClick={onToggle}
               className={`w-full font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition ${
                 isRunning ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
               } text-white ${tutorialHighlight(3)}`}
@@ -329,8 +302,7 @@ export function ControlPanel({
           </Tooltip>
 
           <Tooltip text="Restablece todos los parámetros al estado inicial">
-            <button
-              onClick={onReset}
+            <button onClick={onReset}
               className="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition"
             >
               <RotateCcw className="w-5 h-5" />
@@ -338,7 +310,7 @@ export function ControlPanel({
             </button>
           </Tooltip>
 
-          <Tooltip text="Aumenta la reactividad del reactor (más fisiones nucleares → más potencia)">
+          <Tooltip text="Aumenta la reactividad del reactor (más fisiones nucleares → más potencia). Efecto gradual: 5–30 segundos.">
             <button
               onClick={() => { sim.increasePower(0.5); onStateChange(); }}
               disabled={!isRunning}
@@ -349,7 +321,7 @@ export function ControlPanel({
             </button>
           </Tooltip>
 
-          <Tooltip text="Inserta barras de boro → absorben neutrones → reduce la reactividad y baja la potencia">
+          <Tooltip text={barrasTooltipInsercion}>
             <button
               onClick={() => { sim.insertControlRods(5); onStateChange(); }}
               disabled={!isRunning || sim.failures.controlRodsStuck}
@@ -360,7 +332,7 @@ export function ControlPanel({
             </button>
           </Tooltip>
 
-          <Tooltip text="Retira barras de control → más neutrones libres → aumenta la reactividad y sube la potencia">
+          <Tooltip text={barrasTooltipRetiro}>
             <button
               onClick={() => { sim.withdrawControlRods(5); onStateChange(); }}
               disabled={!isRunning || sim.failures.controlRodsStuck}
@@ -371,13 +343,11 @@ export function ControlPanel({
             </button>
           </Tooltip>
 
-          <Tooltip
-            text={
-              sim.pumpRunning
-                ? 'Apagar la bomba es peligroso — sin refrigerante la temperatura sube sin control'
-                : 'Enciende la bomba de refrigerante para enfriar el núcleo del reactor'
-            }
-          >
+          <Tooltip text={
+            sim.pumpRunning
+              ? 'Apagar la bomba es peligroso — sin refrigerante la temperatura sube rápidamente. Arranque tiene 5 segundos de demora.'
+              : 'Enciende la bomba de refrigerante (arranque: 5 segundos). Flujo se restablece gradualmente.'
+          }>
             <button
               onClick={() => { sim.togglePump(); onStateChange(); }}
               disabled={!isRunning}
@@ -390,7 +360,7 @@ export function ControlPanel({
             </button>
           </Tooltip>
 
-          <Tooltip text="PARADA DE EMERGENCIA (SCRAM): inserta todas las barras al instante para detener la reacción">
+          <Tooltip text="PARADA DE EMERGENCIA (SCRAM): inserta TODAS las barras instantáneamente. Detiene la fisión en segundos.">
             <button
               onClick={() => { sim.emergencyScram(); onStateChange(); }}
               disabled={!isRunning || sim.emergencyShutdown}
@@ -402,7 +372,7 @@ export function ControlPanel({
           </Tooltip>
 
           {sim.emergencyShutdown && (
-            <Tooltip text="Recupera el reactor del estado de parada de emergencia para reiniciar operación">
+            <Tooltip text="Recupera el reactor del estado SCRAM para reiniciar operación en modo controlado">
               <button
                 onClick={() => { sim.resetFromScram(); onStateChange(); }}
                 className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition"
@@ -414,100 +384,60 @@ export function ControlPanel({
         </div>
       </div>
 
-      {/* ══════════════════════════════════════
-          ESCENARIOS
-      ══════════════════════════════════════ */}
+      {/* ══ ESCENARIOS ══ */}
       <div className="mb-6">
         <h3 className="text-lg font-bold text-white mb-4">ESCENARIOS</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Tooltip text="Operación normal estándar. Ideal para aprender y practicar" position="bottom">
-            <button
-              onClick={() => onLoadScenario('normal')}
-              className={`w-full py-2 px-4 rounded font-bold text-sm transition ${
-                scenario === 'normal' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              ✓ Normal
-            </button>
+            <button onClick={() => onLoadScenario('normal')}
+              className={`w-full py-2 px-4 rounded font-bold text-sm transition ${scenario === 'normal' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            >✓ Normal</button>
           </Tooltip>
           <Tooltip text="Loss Of Coolant Accident: simula una brecha en el circuito de refrigeración" position="bottom">
-            <button
-              onClick={() => onLoadScenario('loca')}
-              className={`w-full py-2 px-4 rounded font-bold text-sm transition ${
-                scenario === 'loca' ? 'bg-yellow-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              ⚠️ LOCA
-            </button>
+            <button onClick={() => onLoadScenario('loca')}
+              className={`w-full py-2 px-4 rounded font-bold text-sm transition ${scenario === 'loca' ? 'bg-yellow-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            >⚠️ LOCA</button>
           </Tooltip>
           <Tooltip text="Recrea Chernobyl 1986: alta potencia con sistemas de seguridad desactivados" position="bottom">
-            <button
-              onClick={() => onLoadScenario('chernobyl')}
-              className={`w-full py-2 px-4 rounded font-bold text-sm transition ${
-                scenario === 'chernobyl' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              💣 Chernobyl
-            </button>
+            <button onClick={() => onLoadScenario('chernobyl')}
+              className={`w-full py-2 px-4 rounded font-bold text-sm transition ${scenario === 'chernobyl' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            >💣 Chernobyl</button>
           </Tooltip>
           <Tooltip text="Recrea Fukushima 2011: el tsunami destruye la bomba de refrigeración" position="bottom">
-            <button
-              onClick={() => onLoadScenario('fukushima')}
-              className={`w-full py-2 px-4 rounded font-bold text-sm transition ${
-                scenario === 'fukushima' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
-            >
-              🌊 Fukushima
-            </button>
+            <button onClick={() => onLoadScenario('fukushima')}
+              className={`w-full py-2 px-4 rounded font-bold text-sm transition ${scenario === 'fukushima' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            >🌊 Fukushima</button>
           </Tooltip>
         </div>
       </div>
 
-      {/* ══════════════════════════════════════
-          FALLOS SIMULABLES
-      ══════════════════════════════════════ */}
+      {/* ══ FALLOS SIMULABLES ══ */}
       <div>
         <h3 className="text-lg font-bold text-white mb-4">INYECTAR FALLOS (Avanzado)</h3>
         <div className="grid grid-cols-2 gap-3">
           <Tooltip text="Detiene la bomba de refrigeración — el reactor pierde su sistema de enfriamiento principal">
-            <button
-              onClick={() => { sim.causePumpFailure(); onStateChange(); }}
+            <button onClick={() => { sim.causePumpFailure(); onStateChange(); }}
               disabled={!isRunning || sim.failures.pumpFailure}
               className="w-full bg-red-700 hover:bg-red-800 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-3 rounded text-sm transition"
-            >
-              Fallo Bomba
-            </button>
+            >Fallo Bomba</button>
           </Tooltip>
           <Tooltip text="Simula una brecha en el circuito primario: el refrigerante se escapa reduciendo el flujo al 50%">
-            <button
-              onClick={() => { sim.causeCoolantLeak(); onStateChange(); }}
+            <button onClick={() => { sim.causeCoolantLeak(); onStateChange(); }}
               disabled={!isRunning || sim.failures.coolantLeak}
               className="w-full bg-red-700 hover:bg-red-800 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-3 rounded text-sm transition"
-            >
-              Pérdida Refrigerante
-            </button>
+            >Pérdida Refrigerante</button>
           </Tooltip>
           <Tooltip text="Desactiva el SCRAM automático — sin protecciones, la reacción puede ser incontrolable (como en Chernobyl)">
-            <button
-              onClick={() => { sim.disableSafetySystems(); onStateChange(); }}
+            <button onClick={() => { sim.disableSafetySystems(); onStateChange(); }}
               disabled={!isRunning || !sim.safetySystemsActive}
               className="w-full bg-red-700 hover:bg-red-800 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-3 rounded text-sm transition"
-            >
-              Desactivar Seguridad
-            </button>
+            >Desactivar Seguridad</button>
           </Tooltip>
           <Tooltip text="Bloquea las barras de control en su posición actual — no se podrán mover manualmente">
-            <button
-              onClick={() => {
-                sim.failures.controlRodsStuck = true;
-                sim.logEvent('❌ Barras de control ATASCADAS', 'critical');
-                onStateChange();
-              }}
+            <button onClick={() => { sim.failures.controlRodsStuck = true; sim.logEvent('❌ Barras de control ATASCADAS', 'critical'); onStateChange(); }}
               disabled={!isRunning || sim.failures.controlRodsStuck}
               className="w-full bg-red-700 hover:bg-red-800 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-3 rounded text-sm transition"
-            >
-              Barras Atascadas
-            </button>
+            >Barras Atascadas</button>
           </Tooltip>
         </div>
       </div>
