@@ -1,5 +1,7 @@
 # ⚛️ Nuclear Reactor Simulator v2.6
 
+**Demo en vivo:** https://nuclear-simulator.vercel.app/
+
 **Herramienta Educativa de Simulación Nuclear - Point-Kinetics IAEA-Standard**
 
 ---
