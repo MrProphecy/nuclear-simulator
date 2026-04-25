@@ -3,8 +3,8 @@ import { AlertTriangle, Radio, Award, BookOpen, GraduationCap, ClipboardList, Cl
 import { ReactorSimulator } from './utils/ReactorSimulator';
 import { ScoringSystem, DifficultyManager } from './utils/ScoringSystem';
 import { ControlPanel } from './components/ControlPanel';
-import { GaugeCard, ReactorCoreVisualization, AchievementBadge, ScoreBoard } from './components/Gauges';
-import { PowerTemperatureChart, PressureFlowChart, StabilityChart } from './components/Charts';
+import { ReactorCoreVisualization, AchievementBadge, ScoreBoard } from './components/Gauges';
+import { StabilityChart } from './components/Charts';
 import { WelcomeModal } from './components/WelcomeModal';
 import { ScramModal } from './components/ScramModal';
 import { InstrumentsPanel } from './components/InstrumentsPanel';
@@ -23,6 +23,10 @@ import { PostScramRecovery } from './components/PostScramRecovery';
 import { AdvancedControls } from './components/AdvancedControls';
 import { ContextualHints } from './components/ContextualHints';
 import { isInvestigationComplete } from './utils/ScramInvestigationLogic';
+import { AnalogGauge } from './components/AnalogGauge';
+import { AdvancedPowerTempChart, AdvancedPressureFlowChart } from './components/AdvancedCharts';
+import { ProfessionalAlertPanel } from './components/ProfessionalAlertPanel';
+import ChangelogViewer from './components/ChangelogViewer';
 
 // ── INDICADOR DE PACIENCIA ────────────────────────────────────────────────────
 function PatienceIndicator({ isStabilizing, stabilizationProgress, lastActionName, pendingChanges }) {
@@ -380,6 +384,11 @@ export default function App() {
 
   const [showEducation, setShowEducation] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
+
+  // Long-term history: sampled every 5 simulation seconds, kept for 2 hours (1440 pts)
+  const [longHistory, setLongHistory] = useState([]);
+  const lastLongHistoryTimeRef = useRef(-5);
 
   // Alerta de evento aleatorio — la dismisseamos manualmente
   const [dismissedAlertTime, setDismissedAlertTime] = useState(-999);
@@ -453,12 +462,24 @@ export default function App() {
       }
 
       if (newState.time % 0.5 < 0.01) {
-        setHistory(prev => [...prev.slice(-180), {
+        setHistory(prev => [...prev.slice(-240), {
           time: newState.time.toFixed(1),
           power: parseFloat(newState.power.toFixed(2)),
           temperature: parseFloat(newState.temperature.toFixed(1)),
           pressure: parseFloat(newState.pressure.toFixed(1)),
           coolantFlow: parseFloat(newState.coolantFlow.toFixed(1))
+        }]);
+      }
+
+      // Long-term history sampled every 5 simulation seconds (up to 1440 pts = 2h)
+      if (newState.time - lastLongHistoryTimeRef.current >= 5) {
+        lastLongHistoryTimeRef.current = newState.time;
+        setLongHistory(prev => [...prev.slice(-1440), {
+          time: newState.time.toFixed(0),
+          power: parseFloat(newState.power.toFixed(1)),
+          temperature: parseFloat(newState.temperature.toFixed(1)),
+          pressure: parseFloat(newState.pressure.toFixed(1)),
+          coolantFlow: parseFloat(newState.coolantFlow.toFixed(1)),
         }]);
       }
 
@@ -604,6 +625,8 @@ export default function App() {
     setState(simulatorRef.current.getState());
     setScoring(scoringRef.current.getState());
     setHistory([]);
+    setLongHistory([]);
+    lastLongHistoryTimeRef.current = -5;
     setScenario('normal');
     setNewAchievements([]);
     setShowScramModal(false);
@@ -630,6 +653,8 @@ export default function App() {
     setState(simulatorRef.current.getState());
     setScoring(scoringRef.current.getState());
     setHistory([]);
+    setLongHistory([]);
+    lastLongHistoryTimeRef.current = -5;
     setScenario('normal');
     setNewAchievements([]);
     setIsRunning(false);
@@ -725,6 +750,8 @@ export default function App() {
     setState(simulatorRef.current.getState());
     setScoring(scoringRef.current.getState());
     setHistory([]);
+    setLongHistory([]);
+    lastLongHistoryTimeRef.current = -5;
     setNewAchievements([]);
     setShowScramModal(false);
     scramModalShownRef.current = false;
@@ -783,6 +810,28 @@ export default function App() {
         />
       )}
 
+      {showChangelog && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 w-full max-w-2xl rounded-xl border border-slate-600 overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+              <div>
+                <h2 className="text-lg font-bold text-blue-400">Changelog — Nuclear Reactor Simulator</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Historial de versiones y mejoras</p>
+              </div>
+              <button
+                onClick={() => setShowChangelog(false)}
+                className="text-slate-400 hover:text-white text-2xl leading-none px-2 py-1 rounded hover:bg-slate-700 transition"
+              >
+                ×
+              </button>
+            </div>
+            <div className="overflow-y-auto" style={{ maxHeight: '70vh' }}>
+              <ChangelogViewer tutorialMode={tutorialMode} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {state.emergencyShutdown && (
         <div
           className="fixed inset-0 pointer-events-none z-40 alarm-red"
@@ -799,7 +848,7 @@ export default function App() {
                 <Radio className="w-10 h-10 text-yellow-500 reactor-core" />
                 Nuclear Simulator
               </h1>
-              <p className="text-slate-400 text-sm">Educativo — Física realista v2.5 · Recuperación Post-SCRAM Realista</p>
+              <p className="text-slate-400 text-sm">Educativo — Física realista v2.6 · Panel Profesional · Agujas Analógicas · Alertas con Timestamp</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <button
@@ -834,6 +883,12 @@ export default function App() {
               >
                 <ClipboardList className="w-4 h-4" />
                 Historial
+              </button>
+              <button
+                onClick={() => setShowChangelog(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition bg-indigo-700 hover:bg-indigo-600 text-white"
+              >
+                Changelog
               </button>
               <div className={`p-4 rounded-lg border-2 ${alertColors[alertLevel]}`}>
                 <p className="text-sm font-bold">
@@ -985,20 +1040,74 @@ export default function App() {
         {/* INSTRUMENTOS DEL REACTOR */}
         <InstrumentsPanel />
 
-        {/* MEDIDORES PRINCIPALES */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
-          <Tooltip text="Potencia: Energía generada en Megavatios. Normal: 500–800 MW" position="bottom">
-            <GaugeCard label="POTENCIA" value={state.power} unit="MW" max={2000} color="bg-red-500" />
-          </Tooltip>
-          <Tooltip text="Temperatura: Calor del núcleo en Kelvin. Máximo seguro: 550K" position="bottom">
-            <GaugeCard label="TEMPERATURA" value={state.temperature} unit="K" max={700} color="bg-blue-500" />
-          </Tooltip>
-          <Tooltip text={`Presión: Estrés del circuito primario. Máximo: 160 bar${state.reliefValveOpen ? ' — VÁLVULA ABIERTA' : ''}`} position="bottom">
-            <GaugeCard label={state.reliefValveOpen ? 'PRESIÓN ⚠️' : 'PRESIÓN'} value={state.pressure} unit="bar" max={170} color={state.reliefValveOpen ? 'bg-orange-500' : 'bg-cyan-500'} />
-          </Tooltip>
-          <Tooltip text="Flujo Refrigerante: Circulación de agua. Mínimo: 30%" position="bottom">
-            <GaugeCard label="FLUJO REFRIGERANTE" value={state.coolantFlow} unit="%" max={100} color="bg-purple-500" />
-          </Tooltip>
+        {/* PANEL PROFESIONAL — AGUJAS ANALÓGICAS */}
+        <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 my-6">
+          <div className="flex items-center gap-3 mb-4">
+            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+              state.emergencyShutdown ? 'bg-red-500 animate-pulse' :
+              isRunning ? 'bg-green-500 animate-pulse' : 'bg-slate-500'
+            }`} />
+            <h2 className="text-sm font-bold text-white uppercase tracking-widest">
+              Panel de Instrumentación — Sala de Control v2.6
+            </h2>
+            <span className={`ml-auto text-xs px-2.5 py-1 rounded font-bold ${
+              state.emergencyShutdown ? 'bg-red-900 text-red-300 animate-pulse' :
+              tutorialMode ? 'bg-blue-900 text-blue-300' : 'bg-slate-700 text-slate-300'
+            }`}>
+              {state.emergencyShutdown ? 'SCRAM ACTIVO' : tutorialMode ? 'MODO TUTORIAL' : 'MODO LIBRE'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <Tooltip text="Potencia: Energía generada. Normal: 500–800 MW. Límite: 1000 MW" position="bottom">
+              <AnalogGauge
+                label="Potencia"
+                value={state.power}
+                min={0} max={1000}
+                unit="MW"
+                warningAt={700}
+                dangerAt={900}
+                size={168}
+              />
+            </Tooltip>
+            <Tooltip text="Temperatura del núcleo en Kelvin. Alerta: 500 K. Máximo: 550 K" position="bottom">
+              <AnalogGauge
+                label="Temperatura"
+                value={Math.min(state.temperature, 650)}
+                min={270} max={650}
+                unit="K"
+                warningAt={500}
+                dangerAt={550}
+                size={168}
+              />
+            </Tooltip>
+            <Tooltip text={`Presión del circuito primario. Alerta: 145 bar. SCRAM: 155 bar${state.reliefValveOpen ? ' — VÁLVULA ABIERTA' : ''}`} position="bottom">
+              <AnalogGauge
+                label={state.reliefValveOpen ? 'Presión ⚠' : 'Presión'}
+                value={Math.min(state.pressure, 180)}
+                min={0} max={180}
+                unit="bar"
+                warningAt={145}
+                dangerAt={155}
+                size={168}
+              />
+            </Tooltip>
+            <Tooltip text="Flujo de refrigerante. Alerta: <50%. Crítico: <30%" position="bottom">
+              <AnalogGauge
+                label="Flujo Refrig."
+                value={state.coolantFlow}
+                min={0} max={100}
+                unit="%"
+                warningAt={50}
+                dangerAt={30}
+                invertZones={true}
+                size={168}
+              />
+            </Tooltip>
+          </div>
+
+          {/* Professional alert panel */}
+          <ProfessionalAlertPanel state={state} isRunning={isRunning} />
         </div>
 
         {/* VISUALIZACIÓN DEL REACTOR + ZONAS TÉRMICAS + ESTADO */}
@@ -1110,10 +1219,10 @@ export default function App() {
           />
         )}
 
-        {/* GRÁFICAS */}
+        {/* GRÁFICAS AVANZADAS CON HISTÓRICO */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <PowerTemperatureChart history={history} />
-          <PressureFlowChart history={history} />
+          <AdvancedPowerTempChart history={history} longHistory={longHistory} />
+          <AdvancedPressureFlowChart history={history} longHistory={longHistory} />
         </div>
 
         <div className="grid grid-cols-1 gap-6 mb-6">
@@ -1175,8 +1284,8 @@ export default function App() {
 
         {/* FOOTER */}
         <div className="text-center text-slate-500 text-xs border-t border-slate-700 pt-4">
-          <p>⚛️ Nuclear Reactor Simulator v2.5 | Recuperación Post-SCRAM Realista | Educativo</p>
-          <p className="mt-2">Doppler · Calor de Decaimiento · Cuenta Regresiva · Investigación Post-SCRAM · Riesgo de Fusión</p>
+          <p>⚛️ Nuclear Reactor Simulator v2.6 | Panel Profesional | Agujas Analógicas | Alertas con Timestamp</p>
+          <p className="mt-2">Doppler · Calor de Decaimiento · Cuenta Regresiva · Investigación Post-SCRAM · Gráficas 2h · Changelog</p>
           <p className="mt-1">GitHub: MrProphecy | Deployed on Vercel</p>
         </div>
       </div>

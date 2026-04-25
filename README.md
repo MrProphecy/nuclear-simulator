@@ -1,4 +1,4 @@
-# ⚛️ Nuclear Reactor Simulator v2.5
+# ⚛️ Nuclear Reactor Simulator v2.6
 
 **Simulador Nuclear Educativo Realista para Capacitación de Operadores**
 
@@ -175,12 +175,12 @@ Objetivo: Validar competencias operacionales
 
 ## 🚀 Próximas Versiones
 
-**v2.5 (Junio 2026):** Validación Manual y Cálculos
+**v2.7 (Mayo 2026):** Validación Manual y Cálculos
 - Panel de cálculo para verificar eficiencia
 - Evaluación de competencias
 - Validación manual vs automática
 
-**v2.6 (Julio 2026):** Modo Multiplayer
+**v2.8 (Junio 2026):** Modo Multiplayer
 - Comunicación entre operadores
 - Roles diferentes (control, monitoreo, supervisor)
 - Simulaciones coordinadas
@@ -189,6 +189,61 @@ Objetivo: Validar competencias operacionales
 - Módulos 0-6 (Fundamentos → Operación Avanzada)
 - Certificaciones reconocibles
 - API para instituciones
+
+---
+
+## 📋 Changelog
+
+[Ver historial completo de cambios →](./CHANGELOG.md)
+
+### Resumen de Versiones
+
+**v2.6** - Panel Profesional (ACTUAL)
+- Agujas analógicas profesionales
+- Gráficas con histórico de 2 horas
+- Sistema de alertas con timestamp
+- Interface estilo sala de control real
+- CHANGELOG visualizable en la app
+
+**v2.5** - Recuperación Post-SCRAM Realista
+- Enfriamiento de decaimiento realista
+- Investigación obligatoria post-evento
+- Cuenta regresiva educativa
+- Análisis de causa raíz
+
+**v2.4** - Controles Avanzados
+- Válvula de alivio manual
+- Bomba primaria velocidad variable
+- Enfriamiento auxiliar
+- Análisis de riesgo en tiempo real
+- Dos modos (Tutorial vs Libre)
+
+**v2.3** - Sistema Inteligente de Errores
+- Detección automática de errores
+- Bocadillos educativos con casos históricos
+- Análisis post-error detallado
+- Aprendizaje sin "game over"
+
+**v2.2** - Realismo Profundo
+- Dinámicas temporales realistas (demoras en cascada)
+- Retroalimentación térmica Doppler
+- Sistemas acoplados
+- Eventos dinámicos aleatorios
+- Historial de auditoría
+
+**v2.1** - Profundidad Educativa
+- Tooltips educativos interactivos
+- Panel "Aprende más" con glosario
+- SCRAM explicativo con casos históricos
+- Indicadores de seguridad
+- Tutorial de 7 pasos
+
+**v2.0** - Fundamentos
+- React + Vite + Tailwind
+- Física nuclear (ecuación punto cinético)
+- Controles básicos
+- Gráficas en tiempo real
+- Validación IAEA-standard
 
 ---
 
@@ -256,4 +311,4 @@ Análisis post-evento automático
 **Herramienta Profesional de Capacitación Nuclear**
 
 Last Updated: 2026-04-25
-Version: v2.4 Sistemas Avanzados
+Version: v2.6 Panel Profesional
